@@ -1,0 +1,99 @@
+<div class="relative flex w-full justify-center">
+  <div hlmButtonGroup class="bg-background rounded">
+    <span hlmButtonGroupText class="border-input text-xs whitespace-nowrap">
+      {{ paginationLabel() }}
+    </span>
+    <button
+      hlmBtn
+      variant="outline"
+      size="sm"
+      class="aspect-square h-auto"
+      [disabled]="tableMeta()?.page === 1"
+      (click)="onNavigateFirstPage.emit()"
+    >
+      <ng-icon name="lucideChevronFirst" />
+    </button>
+    <button
+      hlmBtn
+      variant="outline"
+      size="sm"
+      class="aspect-square h-auto"
+      [disabled]="tableMeta()?.page === 1"
+      (click)="onSkipPages.emit(-10)"
+    >
+      <ng-icon name="lucideChevronsLeft" />
+    </button>
+    <button
+      hlmBtn
+      variant="outline"
+      size="sm"
+      class="aspect-square h-auto"
+      [disabled]="!tableMeta()?.hasPreviousPage"
+      (click)="onNavigatePreviousPage.emit()"
+    >
+      <ng-icon name="lucideChevronLeft" />
+    </button>
+    <span
+      hlmButtonGroupText
+      class="border-input flex min-w-8 justify-center text-xs whitespace-nowrap"
+    >
+      {{ tableMeta()?.page ?? '-' }}&nbsp;/&nbsp;{{ tableMeta()?.totalPages ?? '-' }}
+    </span>
+    <button
+      hlmBtn
+      variant="outline"
+      size="sm"
+      class="aspect-square h-auto"
+      [disabled]="!tableMeta()?.hasNextPage"
+      (click)="onNavigateNextPage.emit()"
+    >
+      <ng-icon name="lucideChevronRight" />
+    </button>
+    <button
+      hlmBtn
+      variant="outline"
+      size="sm"
+      class="aspect-square h-auto"
+      [disabled]="tableMeta()?.page === tableMeta()?.totalPages"
+      (click)="onSkipPages.emit(10)"
+    >
+      <ng-icon name="lucideChevronsRight" />
+    </button>
+    <button
+      hlmBtn
+      variant="outline"
+      size="sm"
+      class="aspect-square h-auto"
+      [disabled]="tableMeta()?.page === tableMeta()?.totalPages"
+      (click)="onNavigateLastPage.emit()"
+    >
+      <ng-icon name="lucideChevronLast" />
+    </button>
+    <span hlmButtonGroupText class="border-input flex justify-center p-0 text-xs whitespace-nowrap">
+      <hlm-select [value]="tableMeta()?.perPage" (valueChange)="onPerPageChange.emit($event ?? 15)">
+        <hlm-select-trigger class="w-16 rounded-l-none border-none text-xs outline-none">
+          <hlm-select-value placeholder="Per Page" />
+        </hlm-select-trigger>
+        <hlm-select-content *hlmSelectPortal>
+          <hlm-select-group>
+            <hlm-select-label>Per Page</hlm-select-label>
+            @for (option of perPageOptions(); track option) {
+              <hlm-select-item [value]="option">{{ option }}</hlm-select-item>
+            }
+          </hlm-select-group>
+        </hlm-select-content>
+      </hlm-select>
+    </span>
+  </div>
+  <div class="absolute right-4 flex h-full items-center">
+    <button
+      hlmBtn
+      variant="secondary"
+      size="sm"
+      class="aspect-square h-auto w-10 rounded-full"
+      (click)="onScrollToTop.emit()"
+    >
+      <ng-icon hlm name="lucideChevronUp" />
+    </button>
+  </div>
+</div>

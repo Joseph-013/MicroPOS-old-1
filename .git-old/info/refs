@@ -1,0 +1,17 @@
+c59119ddd6508fb151f1b959af5ac9a9fcdef17f	refs/heads/agents/dependency-resolution-errors
+c59119ddd6508fb151f1b959af5ac9a9fcdef17f	refs/heads/agents/dependency-resolution-errors-ab2e4c6c
+779fb53adb34494418852bc3416965b31876f711	refs/heads/backup-before-reset
+018f2aac51c45799e6192a013a904ef3000fea42	refs/heads/main
+17aa809b08030b3e814579fb70768b76228fa93e	refs/heads/receipt-printer-logic-to-angular
+cddfd9d3271a1fe261d7893f503a7630c2b8c091	refs/heads/repository-pattern
+bc7cb610bfab242b68596bca1ca01f0a369bafa6	refs/heads/repository-pattern-drizzle
+018f2aac51c45799e6192a013a904ef3000fea42	refs/remotes/origin/HEAD
+018f2aac51c45799e6192a013a904ef3000fea42	refs/remotes/origin/main
+1180ca3f475e68f1291b7dc61c7b4fbe31b3c71e	refs/remotes/origin/receipt-printer-logic-to-angular
+cddfd9d3271a1fe261d7893f503a7630c2b8c091	refs/remotes/origin/repository-pattern
+bc7cb610bfab242b68596bca1ca01f0a369bafa6	refs/remotes/origin/repository-pattern-drizzle
+b9e2d5fc4e4ea0fffc2536f68bb42bdb49ca3931	refs/sessions/46794c11-2b30-4665-afd8-6fd5c9dd061d/checkpoints/turn/0
+ba289e960444adea4906e6883bc4648e9d6b3fba	refs/sessions/46794c11-2b30-4665-afd8-6fd5c9dd061d/checkpoints/turn/1
+b0a891b4fdab7022ebb820d9219878838ae1ea5d	refs/sessions/6d7a35e8-b9bb-4372-a7c8-8ee6813338bf/checkpoints/turn/0
+83901b51814f7e306947cc9d4fd4126163c5e601	refs/sessions/6d7a35e8-b9bb-4372-a7c8-8ee6813338bf/checkpoints/turn/1
+6cda8914720d4112a87e3c39e82611e69f9af479	refs/stash

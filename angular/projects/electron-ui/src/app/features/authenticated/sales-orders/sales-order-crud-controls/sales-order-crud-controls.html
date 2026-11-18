@@ -1,0 +1,124 @@
+<div class="table-control__control">
+  <div class="control__header">
+    <h3 class="control__title">
+      @switch (formMode()) {
+        @case ('creating') {
+          Create Item
+        }
+        @case ('editing') {
+          Edit Item
+        }
+        @case ('viewing') {
+          View Item
+        }
+      }
+    </h3>
+    @if (formMode()) {
+      <button
+        hlmBtn
+        variant="ghost"
+        (click)="dismiss()"
+        class="control__dismiss-button"
+        size="icon-lg"
+      >
+        <ng-icon hlm name="lucideXCircle" />
+      </button>
+    }
+  </div>
+
+  @if (formMode() !== null && salesOrderData()) {
+    <hlm-field-group>
+      <hlm-field>
+        <label hlmFieldLabel>Order Number</label>
+        <p clickToCopy>{{ salesOrderData()?.orderNumber }}</p>
+      </hlm-field>
+      <hlm-field>
+        <label hlmFieldLabel>Total Amount</label>
+        <p clickToCopy>{{ salesOrderData()!.snapshotTotalAmount | currency: 'PHP' }}</p>
+      </hlm-field>
+      <hlm-field>
+        <label hlmFieldLabel>Amount Tendered</label>
+        <p clickToCopy>{{ salesOrderData()!.amountTendered | currency: 'PHP' }}</p>
+      </hlm-field>
+      <hlm-field>
+        <label hlmFieldLabel>Change Amount</label>
+        <p clickToCopy>{{ salesOrderData()!.changeAmount | currency: 'PHP' }}</p>
+      </hlm-field>
+      <hlm-field>
+        <hlm-field-label class="flex justify-between">
+          <label>Items</label>
+          <button hlmBtn variant="outline" size="xs" (click)="handleCopyToCheckout()">
+            <ng-icon name="lucideExternalLink" />
+            Copy to Checkout
+          </button>
+        </hlm-field-label>
+        <div class="overflow-x-auto">
+          <table hlmTable class="w-full">
+            <thead hlmTHead>
+              <tr hlmTr>
+                <th hlmTh>Qty</th>
+                <th hlmTh>Item Name & Price</th>
+                <th hlmTh>Line Total</th>
+              </tr>
+            </thead>
+            <tbody hlmTBody>
+              @if (salesOrderData()?.salesOrderItems; as orderItems) {
+                @for (orderItem of orderItems; track orderItem.id) {
+                  <tr hlmTr>
+                    <td hlmTd class="text-center">{{ orderItem.quantity }}</td>
+                    <td hlmTd>
+                      {{ orderItem.snapshotName }}&nbsp;&nbsp;@
+                      {{ orderItem.snapshotPrice | currency: 'PHP' }}
+                    </td>
+                    <td hlmTd>
+                      {{ orderItem.quantity * orderItem.snapshotPrice | currency: 'PHP' }}
+                    </td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+      </hlm-field>
+      <hlm-field>
+        <label hlmFieldLabel>Created At</label>
+        <p clickToCopy>{{ salesOrderData()?.createdAt | date: 'MMMM d, y' }}</p>
+      </hlm-field>
+      <hlm-field>
+        <label hlmFieldLabel>Deleted At</label>
+        <p clickToCopy>{{ (salesOrderData()?.deletedAt | date: 'MMMM d, y') ?? '-' }}</p>
+      </hlm-field>
+    </hlm-field-group>
+  } @else {
+    <div class="control__idle-container">
+      <span class="control__idle-text">
+        <ng-icon name="lucideArrowRightFromLine" />
+        Select from list to view sales order
+      </span>
+    </div>
+  }
+  <div class="control__footer">
+    @if (formMode() === 'viewing') {
+      @if (patchSalesOrder()?.deletedAt === null) {
+        <button hlmBtn variant="destructive" (click)="onDelete.emit(patchSalesOrder()!)">
+          <ng-icon name="lucideTrash" />
+          Delete
+        </button>
+      } @else {
+        <button hlmBtn variant="secondary" (click)="onRestore.emit(patchSalesOrder()!)">
+          <ng-icon name="lucideArchiveRestore" />
+          Restore
+        </button>
+      }
+    } @else if (formMode() !== null) {
+      <button hlmBtn variant="outline" (click)="cancelOperation()">Cancel</button>
+    }
+    <div class="control__footer-separator"></div>
+    @if (patchSalesOrder()?.deletedAt === null) {
+      <button hlmBtn (click)="handlePrint()">
+        <ng-icon name="lucidePrinter" />
+        Print
+      </button>
+    }
+  </div>
+</div>

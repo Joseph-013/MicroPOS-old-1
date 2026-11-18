@@ -1,0 +1,15 @@
+hlm-field {
+  display: flex;
+  flex-direction: row;
+}
+
+hlm-field> :first-child {
+  display: flex;
+  width: 8rem;
+  justify-content: end;
+}
+
+hlm-field>:not(:first-child),
+hlm-field>:not(:first-child) * {
+  width: fit-content;
+}

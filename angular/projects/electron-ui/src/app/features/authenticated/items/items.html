@@ -1,0 +1,121 @@
+<div class="table-control">
+  <div class="table-control__data">
+    <div class="data__header-container">
+      <div class="data__header">
+        <h2 class="data__title">Items</h2>
+        <hlm-input-group>
+          <hlm-input-group-addon>
+            <ng-icon name="lucideSearch" />
+          </hlm-input-group-addon>
+          <input
+            hlmInputGroupInput
+            type="text"
+            [(ngModel)]="searchString"
+            placeholder="Barcode, SKU, or Name "
+          />
+          <hlm-input-group-addon align="inline-end">
+            <button hlmInputGroupButton title="Clear" size="icon-xs" (click)="searchString.set('')">
+              <ng-icon name="lucideXCircle" />
+            </button>
+          </hlm-input-group-addon>
+        </hlm-input-group>
+      </div>
+      <div class="data__header-controls">
+        <button hlmBtn variant="outline" size="icon" (click)="refreshItems()">
+          <ng-icon name="lucideRotateCw" />
+        </button>
+        <label class="flex items-center" hlmLabel>
+          <hlm-switch [(checked)]="onlyDeleted" />
+          Deleted
+        </label>
+      </div>
+    </div>
+    <div class="data__table-container">
+      <app-item-table
+        [tableData]="tableData()"
+        [tableMeta]="tableMeta()"
+        [onlyDeleted]="onlyDeleted()"
+        [(sortConfig)]="querySort"
+        [(paginationQuery)]="paginationQuery"
+        (onDeleteEntities)="itemsForDeletion.set($event)"
+        (onEntityClick)="itemForViewing.set($event)"
+        (onRestoreEntities)="itemsForRestoration.set($event)"
+      />
+    </div>
+  </div>
+  <hlm-separator orientation="vertical" />
+  <aside class="table-control__control-container">
+    <app-item-crud-controls
+      [(patchItem)]="itemForViewing"
+      (onDismiss)="itemForViewing.set(null)"
+      [(scanServiceFocus)]="scanServiceFocus"
+      (onSubmit)="refreshItems()"
+      (onDelete)="itemsForDeletion.set([$event])"
+      (onRestore)="itemsForRestoration.set([$event])"
+    />
+  </aside>
+</div>
+
+<hlm-dialog [state]="itemsForDeletion() ? 'open' : 'closed'" (closed)="itemsForDeletion.set(null)">
+  <hlm-dialog-content *hlmDialogPortal="let ctx" class="sm:max-w-sm">
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>
+        Delete
+        {{
+          itemsForDeletion() && itemsForDeletion()!.length > 1
+            ? `${itemsForDeletion()?.length} Items`
+            : 'Item'
+        }}
+      </h3>
+      <p hlmDialogDescription>
+        Confirm delete
+        {{ itemsForDeletion() && itemsForDeletion()!.length > 1 ? 'multiple items.' : 'item.' }}
+      </p>
+    </hlm-dialog-header>
+    <hlm-dialog-footer>
+      <button hlmBtn variant="outline" hlmDialogClose>Cancel</button>
+      <button
+        hlmBtn
+        type="submit"
+        variant="destructive"
+        (click)="deleteItemsForDeletion(); refreshItems(); ctx.close()"
+      >
+        Delete
+      </button>
+    </hlm-dialog-footer>
+  </hlm-dialog-content>
+</hlm-dialog>
+
+<hlm-dialog
+  [state]="itemsForRestoration() ? 'open' : 'closed'"
+  (closed)="itemsForRestoration.set(null)"
+>
+  <hlm-dialog-content *hlmDialogPortal="let ctx" class="sm:max-w-sm">
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>
+        Restore
+        {{
+          itemsForRestoration() && itemsForRestoration()!.length > 1
+            ? `${itemsForRestoration()?.length} Items`
+            : 'Item'
+        }}
+      </h3>
+      <p hlmDialogDescription>
+        Confirm restore
+        {{
+          itemsForRestoration() && itemsForRestoration()!.length > 1 ? 'multiple items.' : 'item.'
+        }}
+      </p>
+    </hlm-dialog-header>
+    <hlm-dialog-footer>
+      <button hlmBtn variant="outline" hlmDialogClose>Cancel</button>
+      <button
+        hlmBtn
+        type="submit"
+        (click)="restoreItemsForRestoration(); refreshItems(); ctx.close()"
+      >
+        Restore
+      </button>
+    </hlm-dialog-footer>
+  </hlm-dialog-content>
+</hlm-dialog>

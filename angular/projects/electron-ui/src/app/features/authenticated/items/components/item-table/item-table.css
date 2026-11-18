@@ -1,0 +1,9 @@
+/* @reference "../../../../../../styles.css";
+
+:host {
+  position: relative;
+}
+
+tr.active {
+  @apply bg-accent/80;
+} */

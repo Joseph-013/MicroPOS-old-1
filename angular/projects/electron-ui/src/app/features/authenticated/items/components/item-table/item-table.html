@@ -1,0 +1,181 @@
+<div #scrollContainer class="data-table__container">
+  <table hlmTable class="data-table__table">
+    <thead hlmTHead>
+      <tr hlmTr>
+        <th hlmTh class="check-column">
+          <hlm-checkbox
+            [indeterminate]="someEntitiesChecked()"
+            [checked]="allEntitiesChecked()"
+            (checkedChange)="toggleAllEntitiesChecked($event)"
+            [disabled]="!tableData()?.length"
+          />
+        </th>
+        <th>
+          <button hlmBtn variant="ghost" (click)="toggleSort('barcode')">
+            Barcode
+            <ng-container *ngTemplateOutlet="sortIcon; context: { field: 'barcode' }" />
+          </button>
+        </th>
+        <th>
+          <button hlmBtn variant="ghost" (click)="toggleSort('plu')">
+            PLU
+            <ng-container *ngTemplateOutlet="sortIcon; context: { field: 'plu' }" />
+          </button>
+        </th>
+        <th hlmTh>
+          <button hlmBtn variant="ghost" (click)="toggleSort('sku')">
+            SKU
+            <ng-container *ngTemplateOutlet="sortIcon; context: { field: 'sku' }" />
+          </button>
+        </th>
+        <th hlmTh>
+          <button hlmBtn variant="ghost" (click)="toggleSort('name')">
+            Name
+            <ng-container *ngTemplateOutlet="sortIcon; context: { field: 'name' }" />
+          </button>
+        </th>
+        <th hlmTh>Price</th>
+        <th hlmTh>
+          <button hlmBtn variant="ghost" (click)="toggleSort('createdAt')">
+            Created At
+            <ng-container *ngTemplateOutlet="sortIcon; context: { field: 'createdAt' }" />
+          </button>
+        </th>
+        <th hlmTh>
+          <button hlmBtn variant="ghost" (click)="toggleSort('updatedAt')">
+            Updated At
+            <ng-container *ngTemplateOutlet="sortIcon; context: { field: 'updatedAt' }" />
+          </button>
+        </th>
+        @if (onlyDeleted()) {
+          <th hlmTh>
+            <button hlmBtn variant="ghost" (click)="toggleSort('deletedAt')">
+              Deleted At
+              <ng-container *ngTemplateOutlet="sortIcon; context: { field: 'deletedAt' }" />
+            </button>
+          </th>
+        }
+      </tr>
+      <tr hlmTr class="header-border">
+        <th [colSpan]="onlyDeleted() ? 9 : 8"></th>
+      </tr>
+    </thead>
+    <tbody hlmTBody>
+      @for (item of tableData(); track item.id) {
+        <tr
+          hlmTr
+          [class.checked]="entityIsChecked(item)"
+          (click)="onEntityClick.emit(item); selectedEntity.set(item)"
+          (contextmenu)="selectedEntity.set(item)"
+          [hlmContextMenuTrigger]="menu"
+        >
+          <td hlmTd class="check-column">
+            <hlm-checkbox
+              [checked]="entityIsChecked(item)"
+              (checkedChange)="toggleCheckedEntity(item, $event)"
+            />
+          </td>
+          <td hlmTd>
+            {{ item.barcode ?? '-' }}
+          </td>
+          <td hlmTd>
+            {{ item.plu ?? '-' }}
+          </td>
+          <td hlmTd>{{ item.sku ?? '-' }}</td>
+          <td hlmTd class="max-w-50 min-w-35 whitespace-pre-wrap">{{ item.name ?? '-' }}</td>
+          <td hlmTd>
+            {{ item.price  | currency: 'PHP'
+            }}{{
+              !['fixed', 'embedded'].includes(item.priceMode)
+                ? `/${PriceModeUnitMap[item.priceMode]}`
+                : null
+            }}
+          </td>
+          <td hlmTd>{{ item.createdAt | date: 'MMMM d, y' }}</td>
+          <td hlmTd>{{ item.updatedAt | date: 'MMMM d, y' }}</td>
+          @if (onlyDeleted()) {
+            <td hlmTd>{{ (item.deletedAt | date: 'MMMM d, y') ?? '-' }}</td>
+          }
+        </tr>
+      } @empty {
+        <tr hlmTr class="empty-row">
+          <td hlmTd [colSpan]="onlyDeleted() ? 9 : 8">
+            <div><ng-icon hlm name="lucideSearchX" /> No items found.</div>
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>
+
+<div class="sticky bottom-4 w-full">
+  <lib-pagination-controls
+    [tableMeta]="tableMeta()!"
+    (onNavigateFirstPage)="paginationQuery.update((prev) => ({ ...prev, page: 1 }))"
+    (onSkipPages)="skipPages($event)"
+    (onNavigatePreviousPage)="
+      paginationQuery.update((prev) => ({ ...prev, page: (prev?.page ?? 1) - 1 }))
+    "
+    (onNavigateNextPage)="
+      paginationQuery.update((prev) => ({ ...prev, page: (prev?.page ?? 1) + 1 }))
+    "
+    (onNavigateLastPage)="
+      paginationQuery.update((prev) => ({ ...prev, page: tableMeta()?.totalPages ?? 1 }))
+    "
+    (onPerPageChange)="setPerPage($event)"
+    (onScrollToTop)="scrollToTop()"
+  />
+</div>
+
+<ng-template #sortIcon let-columnName="field">
+  @if (sortConfig()?.field === columnName) {
+    <ng-icon [name]="sortConfig()?.direction === 'asc' ? 'lucideSortAsc' : 'lucideSortDesc'" />
+  } @else {
+    <ng-icon name="lucideArrowUpDown" />
+  }
+</ng-template>
+
+<ng-template #menu>
+  <hlm-dropdown-menu class="p-2">
+    <hlm-dropdown-menu-group class="flex flex-col gap-2">
+      @if (!onlyDeleted()) {
+        <button
+          hlmDropdownMenuItem
+          variant="destructive"
+          (click)="selectedEntity() ? onDeleteEntities.emit([selectedEntity()!]) : null"
+        >
+          <ng-icon name="lucideX" />
+          Delete this {{ entityDefinition.singular }}
+        </button>
+        @if (checkedEntities().length > 0) {
+          <button
+            hlmDropdownMenuItem
+            variant="destructive"
+            (click)="onDeleteEntities.emit(checkedEntities())"
+          >
+            <ng-icon name="lucideX" />
+            Delete checked {{ entityDefinition.plural }}
+          </button>
+        }
+      } @else {
+        <button
+          hlmDropdownMenuItem
+          (click)="selectedEntity() ? onRestoreEntities.emit([selectedEntity()!]) : null"
+        >
+          <ng-icon name="lucideArchiveRestore" />
+          Restore this {{ entityDefinition.singular }}
+        </button>
+        @if (checkedEntities().length > 0) {
+          <button
+            hlmDropdownMenuItem
+            variant="destructive"
+            (click)="onRestoreEntities.emit(checkedEntities())"
+          >
+            <ng-icon name="lucideArchiveRestore" />
+            Restore checked {{ entityDefinition.plural }}
+          </button>
+        }
+      }
+    </hlm-dropdown-menu-group>
+  </hlm-dropdown-menu>
+</ng-template>

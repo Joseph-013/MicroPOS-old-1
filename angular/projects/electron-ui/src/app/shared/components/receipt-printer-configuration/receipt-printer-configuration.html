@@ -1,0 +1,210 @@
+<hlm-dialog state="open" (closed)="onDialogClosed()">
+  <hlm-dialog-content
+    *hlmDialogPortal="let ctx"
+    class="my-10 h-full max-h-[calc(100vh-5rem)] overflow-y-auto sm:max-w-sm"
+  >
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>Configure Receipt Printer</h3>
+      <p hlmDialogDescription>
+        Configure your thermal receipt printer. Click save to apply changes.
+      </p>
+    </hlm-dialog-header>
+
+    <hlm-field-group>
+      <form [formRoot]="storeLogoForm">
+        <hlm-field>
+          <hlm-field-label>Store Logo</hlm-field-label>
+          <div class="flex h-40">
+            <label
+              class="border-input relative mx-auto aspect-square h-full w-40 cursor-pointer border"
+              for="store-image"
+            >
+              @if (assetService.getStoreAssetUrl('store_logo') === null) {
+                <div
+                  class="hover:bg-accent/40 absolute z-10 mx-auto flex size-full flex-col items-center justify-center gap-2 transition-all duration-200 ease-in-out"
+                >
+                  <ng-icon name="lucideImagePlus" hlm />
+                  <span class="text-sm">Upload Image</span>
+                </div>
+              } @else {
+                <div class="absolute size-full bg-white"></div>
+                <img
+                  [src]="assetService.getStoreAssetUrl('store_logo')"
+                  class="object-fit absolute z-1 size-full"
+                />
+                <div
+                  class="bg-accent/50 absolute z-10 mx-auto flex size-full flex-col items-center justify-center gap-2 opacity-20 transition-opacity duration-200 ease-in-out hover:opacity-100"
+                >
+                  <ng-icon name="lucideImageUp" hlm />
+                  <span class="text-sm">Change Image</span>
+                </div>
+              }
+            </label>
+          </div>
+          <input
+            type="file"
+            hidden
+            id="store-image"
+            accept="image/png, image/jpeg, image/webp, image/svg+xml"
+            (change)="onFileSelected($event)"
+          />
+          <hlm-field-description>
+            Supported types: PNG, JPG, JPEG, WEBP, SVG.
+          </hlm-field-description>
+
+          @for (error of storeLogoForm.file().errors(); track error.kind) {
+            <hlm-field-error [validator]="error.kind">
+              {{ error.message }}
+            </hlm-field-error>
+          }
+        </hlm-field>
+      </form>
+
+      <form [formRoot]="storeNameForm" class="contents">
+        <hlm-field>
+          <hlm-field-label>Store Name</hlm-field-label>
+          <hlm-input-group>
+            <hlm-input-group-addon>
+              <ng-icon name="lucideTextCursorInput" />
+            </hlm-input-group-addon>
+            <input hlmInputGroupInput [formField]="storeNameForm.storeName" placeholder="?" />
+            <hlm-input-group-addon align="inline-end">
+              <ng-container
+                [ngTemplateOutlet]="statusIndicator"
+                [ngTemplateOutletContext]="{ status: storeNameState() }"
+              >
+              </ng-container>
+            </hlm-input-group-addon>
+          </hlm-input-group>
+          @for (error of storeNameForm.storeName().errors(); track error.kind) {
+            <hlm-field-error [validator]="error.kind">
+              {{ error.message }}
+            </hlm-field-error>
+          }
+        </hlm-field>
+      </form>
+
+      <form [formRoot]="storeAddressForm">
+        <hlm-field>
+          <hlm-field-label>Store Address</hlm-field-label>
+          <hlm-input-group>
+            <hlm-input-group-addon align="block-start" class="border-input border-b">
+              <hlm-input-group-text>
+                <ng-icon name="lucideLocationEdit" />
+              </hlm-input-group-text>
+              <hlm-input-group-text class="ml-auto">
+                <ng-container
+                  [ngTemplateOutlet]="statusIndicator"
+                  [ngTemplateOutletContext]="{ status: storeAddressState() }"
+                >
+                </ng-container>
+              </hlm-input-group-text>
+            </hlm-input-group-addon>
+            <textarea
+              hlmInputGroupTextarea
+              [formField]="storeAddressForm.storeAddress"
+              placeholder="?"
+            ></textarea>
+          </hlm-input-group>
+          @for (error of storeAddressForm.storeAddress().errors(); track error.kind) {
+            <hlm-field-error [validator]="error.kind">
+              {{ error.message }}
+            </hlm-field-error>
+          }
+        </hlm-field>
+      </form>
+
+      <form [formRoot]="receiptPrinterUsbDeviceForm">
+        <hlm-field>
+          <div hlmFieldLabel class="flex justify-between">
+            <label>Select USB Device</label>
+            <button
+              hlmBtn
+              variant="outline"
+              class="aspect-square h-auto"
+              (click)="usbDeviceService.refreshDevices()"
+            >
+              <ng-icon name="lucideRotateCw" />
+            </button>
+          </div>
+          <hlm-select [formField]="receiptPrinterUsbDeviceForm.receiptPrinterUsbDevice">
+            <hlm-select-trigger class="w-full">
+              <hlm-select-value placeholder="Select Device" />
+              <ng-container
+                [ngTemplateOutlet]="statusIndicator"
+                [ngTemplateOutletContext]="{ status: receiptPrinterUsbDeviceState() }"
+              >
+              </ng-container>
+            </hlm-select-trigger>
+            <hlm-select-content *hlmSelectPortal>
+              <hlm-select-group>
+                @for (device of usbDevicesList(); track device.deviceKey) {
+                  <hlm-select-item [value]="device">
+                    {{ device.manufacturerName }}: {{ device.productName }}
+                  </hlm-select-item>
+                }
+              </hlm-select-group>
+            </hlm-select-content>
+          </hlm-select>
+          @for (
+            error of receiptPrinterUsbDeviceForm.receiptPrinterUsbDevice().errors();
+            track error.kind
+          ) {
+            <hlm-field-error [validator]="error.kind">
+              {{ error.message }}
+            </hlm-field-error>
+          }
+          @for (error of customReceiptPrinterUsbDeviceFormErrorsArray(); track error.kind) {
+            <p class="text-destructive text-sm">{{ error.message }}</p>
+          }
+        </hlm-field>
+      </form>
+
+      <form [formRoot]="paperWidthMmForm">
+        <hlm-field>
+          <hlm-field-label>Paper Width</hlm-field-label>
+          <hlm-input-group>
+            <hlm-input-group-addon>
+              <ng-icon name="lucidePrinter" />
+            </hlm-input-group-addon>
+            <input
+              hlmInputGroupInput
+              [formField]="paperWidthMmForm.paperWidthMm"
+              placeholder="?"
+              type="number"
+            />
+            <hlm-input-group-addon align="inline-end">
+              <ng-container
+                [ngTemplateOutlet]="statusIndicator"
+                [ngTemplateOutletContext]="{ status: paperWidthMmState() }"
+              >
+              </ng-container>
+            </hlm-input-group-addon>
+          </hlm-input-group>
+          @for (error of paperWidthMmForm.paperWidthMm().errors(); track error.kind) {
+            <hlm-field-error [validator]="error.kind">
+              {{ error.message }}
+            </hlm-field-error>
+          }
+        </hlm-field>
+      </form>
+    </hlm-field-group>
+    <!-- <hlm-dialog-footer>
+      <button hlmBtn variant="outline" hlmDialogClose>Close</button>
+    </hlm-dialog-footer> -->
+  </hlm-dialog-content>
+</hlm-dialog>
+
+<ng-template #statusIndicator let-status="status">
+  @switch (status) {
+    @case ('saving') {
+      <ng-icon name="lucideLoader2" class="text-muted-foreground animate-spin text-sm" />
+    }
+    @case ('saved') {
+      <ng-icon
+        name="lucideCheck"
+        class="animate-in fade-in text-sm text-emerald-500 duration-200"
+      />
+    }
+  }
+</ng-template>

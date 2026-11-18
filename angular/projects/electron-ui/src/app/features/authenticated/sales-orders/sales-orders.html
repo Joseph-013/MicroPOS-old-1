@@ -1,0 +1,134 @@
+<div class="table-control">
+  <div class="table-control__data">
+    <div class="data__header-container">
+      <div class="data__header">
+        <h2 class="data__title">Sales Orders</h2>
+        <hlm-input-group>
+          <hlm-input-group-addon>
+            <ng-icon name="lucideSearch" />
+          </hlm-input-group-addon>
+          <input
+            hlmInputGroupInput
+            type="text"
+            [(ngModel)]="orderNumberSearchString"
+            placeholder="Order Number"
+          />
+          <hlm-input-group-addon align="inline-end">
+            <button
+              hlmInputGroupButton
+              title="Clear"
+              size="icon-xs"
+              (click)="orderNumberSearchString.set('')"
+            >
+              <ng-icon name="lucideXCircle" />
+            </button>
+          </hlm-input-group-addon>
+        </hlm-input-group>
+      </div>
+      <div class="data__header-controls">
+        <button hlmBtn variant="outline" size="icon" (click)="refreshTable()">
+          <ng-icon name="lucideRotateCw" />
+        </button>
+        <label class="flex items-center gap-2" hlmLabel>
+          <hlm-switch [(checked)]="onlyDeleted" />
+          Deleted
+        </label>
+      </div>
+    </div>
+    <div class="data__table-container">
+      <app-sales-order-table
+        [tableData]="tableData()"
+        [tableMeta]="tableMeta()"
+        [onlyDeleted]="onlyDeleted()"
+        [(sortConfig)]="querySort"
+        [(paginationQuery)]="paginationQuery"
+        (onDeleteEntities)="salesOrderForDeletion.set($event)"
+        (onEntityClick)="salesOrderForViewing.set($event)"
+        (onRestoreEntities)="salesOrderForRestoration.set($event)"
+      />
+    </div>
+  </div>
+  <hlm-separator orientation="vertical" />
+  <aside class="table-control__control-container">
+    <app-sales-order-crud-controls
+      [(patchSalesOrder)]="salesOrderForViewing"
+      (onDismiss)="salesOrderForViewing.set(null)"
+      (onSubmit)="refreshTable()"
+      (onDelete)="salesOrderForDeletion.set([$event])"
+      (onRestore)="salesOrderForRestoration.set([$event])"
+    />
+  </aside>
+</div>
+
+<hlm-dialog
+  [state]="salesOrderForDeletion() ? 'open' : 'closed'"
+  (closed)="salesOrderForDeletion.set(null)"
+>
+  <hlm-dialog-content *hlmDialogPortal="let ctx" class="sm:max-w-sm">
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>
+        Delete
+        {{
+          salesOrderForDeletion() && salesOrderForDeletion()!.length > 1
+            ? `${salesOrderForDeletion()?.length} Sales Orders`
+            : 'Sales Order'
+        }}
+      </h3>
+      <p hlmDialogDescription>
+        Confirm delete
+        {{
+          salesOrderForDeletion() && salesOrderForDeletion()!.length > 1
+            ? 'multiple sales orders.'
+            : 'sales order.'
+        }}
+      </p>
+    </hlm-dialog-header>
+    <hlm-dialog-footer>
+      <button hlmBtn variant="outline" hlmDialogClose>Cancel</button>
+      <button
+        hlmBtn
+        type="submit"
+        variant="destructive"
+        (click)="deleteSalesOrderForDeletion(); refreshTable(); ctx.close()"
+      >
+        Delete
+      </button>
+    </hlm-dialog-footer>
+  </hlm-dialog-content>
+</hlm-dialog>
+
+<hlm-dialog
+  [state]="salesOrderForRestoration() ? 'open' : 'closed'"
+  (closed)="salesOrderForRestoration.set(null)"
+>
+  <hlm-dialog-content *hlmDialogPortal="let ctx" class="sm:max-w-sm">
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>
+        Restore
+        {{
+          salesOrderForRestoration() && salesOrderForRestoration()!.length > 1
+            ? `${salesOrderForRestoration()?.length} Sales Orders`
+            : 'Sales Order'
+        }}
+      </h3>
+      <p hlmDialogDescription>
+        Confirm restore
+        {{
+          salesOrderForRestoration() && salesOrderForRestoration()!.length > 1
+            ? 'multiple sales orders.'
+            : 'sales order.'
+        }}
+      </p>
+    </hlm-dialog-header>
+    <hlm-dialog-footer>
+      <button hlmBtn variant="outline" hlmDialogClose>Cancel</button>
+      <button
+        hlmBtn
+        type="submit"
+        (click)="restoreSalesOrdersForRestoration(); refreshTable(); ctx.close()"
+      >
+        Restore
+      </button>
+    </hlm-dialog-footer>
+  </hlm-dialog-content>
+</hlm-dialog>

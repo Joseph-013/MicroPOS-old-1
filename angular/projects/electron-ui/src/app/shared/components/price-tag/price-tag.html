@@ -1,0 +1,30 @@
+<hlm-dialog [state]="data() !== null ? 'open' : 'closed'" (closed)="data.set(null)">
+  <hlm-dialog-content *hlmDialogPortal="let ctx" class="w-fit">
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>Item Price Tag</h3>
+    </hlm-dialog-header>
+
+    <div class="mx-auto w-60 bg-white p-1">
+      <!-- price sticker: -->
+      <div #tagPreview class="flex size-full flex-col items-center justify-center pb-2 text-black">
+        <span class="font-anton text-[4rem] leading-20 tracking-wide">
+          {{ (data()!.price | currency: 'PHP') ?? '-' }}
+        </span>
+        <span class="mt-0 text-center leading-4.5 whitespace-pre-wrap">
+          {{ data()!.name }}
+        </span>
+        @if (data()?.barcode) {
+          <div class="mt-1.5 flex h-10 w-full items-end justify-center overflow-clip">
+            <span class="font-ean13 text-[8rem] leading-none tracking-normal">
+              {{ data()!.barcode }}
+            </span>
+          </div>
+        }
+      </div>
+    </div>
+    <hlm-dialog-footer>
+      <!-- <button hlmBtn variant="outline" hlmDialogClose>Cancel</button> -->
+      <button hlmBtn (click)="printLiveElement()">Print</button>
+    </hlm-dialog-footer>
+  </hlm-dialog-content>
+</hlm-dialog>

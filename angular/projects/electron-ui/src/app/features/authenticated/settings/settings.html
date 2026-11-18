@@ -1,0 +1,49 @@
+<div class="mb-2">
+  <h2 class="text-2xl font-bold">Settings</h2>
+</div>
+<div class="mx-auto flex w-full max-w-120 flex-col gap-5">
+  <hlm-field-group>
+    <fieldset hlmFieldSet>
+      <legend hlmFieldLegend>Hardware</legend>
+      <p hlmFieldDescription>Configure connected devices</p>
+
+      <hlm-field>
+        <label hlmFieldLabel>Printer</label>
+        <a hlmBtn variant="outline" routerLink="configure-receipt-printer"
+          >Configure Receipt Printer</a
+        >
+      </hlm-field>
+    </fieldset>
+  </hlm-field-group>
+  <hlm-separator />
+  <hlm-field-group>
+    <fieldset hlmFieldSet>
+      <legend hlmFieldLegend>Application</legend>
+      <p hlmFieldDescription>Application-wide configurations</p>
+
+      <hlm-field>
+        <label hlmFieldLabel class="flex items-start">Dark/Light Mode</label>
+        <div class="flex flex-col gap-2 text-sm">
+          <p class="text-muted-foreground flex gap-2">
+            Current Mode:
+            <span class="flex items-center gap-1">
+              @if (themeService.theme() === 'light') {
+                <ng-icon name="lucideSun" />
+                Light
+              } @else {
+                <ng-icon name="lucideMoon" />
+                Dark
+              }
+            </span>
+          </p>
+          <button hlmBtn variant="outline" (click)="themeService.toggleColorTheme()">
+            <ng-icon name="lucideSunMoon" />
+            Switch Theme
+          </button>
+        </div>
+      </hlm-field>
+    </fieldset>
+  </hlm-field-group>
+</div>
+
+<router-outlet />

@@ -1,0 +1,27 @@
+<hlm-button-group class="flex h-12 w-full rounded-lg">
+  @for (step of steps(); track step) {
+    @if (step < 0) {
+      <button class="h-full flex-1" hlmBtn variant="outline" (click)="adjust(step)">
+        {{ step }}
+      </button>
+    }
+  }
+  <input
+    #stepperInput
+    type="number"
+    hlmInput
+    step="any"
+    [ngModel]="value()"
+    (ngModelChange)="onModelChange($event)"
+    (blur)="onBlur($event)"
+    (focus)="onFocus($event)"
+    class="h-full min-w-22 px-1.5 text-center font-mono text-xl! font-bold"
+  />
+  @for (step of steps(); track step) {
+    @if (step > 0) {
+      <button class="h-full flex-1" hlmBtn variant="outline" (click)="adjust(step)">
+        +{{ step }}
+      </button>
+    }
+  }
+</hlm-button-group>

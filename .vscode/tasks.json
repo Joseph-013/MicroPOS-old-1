@@ -1,0 +1,84 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "serve:ui",
+      "type": "shell",
+      "command": "npm run serve:ui",
+      "options": {
+        "cwd": "${workspaceFolder}/angular"
+      },
+      "presentation": {
+        "group": "angular",
+        "panel": "dedicated",
+        "reveal": "always"
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": {
+          "regexp": "."
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "Building\\.\\.\\.",
+          "endsPattern": "Local:.*http"
+        }
+      }
+    },
+    {
+      "label": "serve:client",
+      "type": "shell",
+      "command": "npm run serve:client",
+      "options": {
+        "cwd": "${workspaceFolder}/angular"
+      },
+      "presentation": {
+        "group": "angular",
+        "panel": "dedicated",
+        "reveal": "always"
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": {
+          "regexp": "."
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "Building\\.\\.\\.",
+          "endsPattern": "Local:.*http"
+        }
+      }
+    },
+    {
+      "label": "dev:electron",
+      "type": "shell",
+      "command": "npm run dev:electron",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "group": "electron",
+        "panel": "dedicated",
+        "reveal": "always"
+      },
+      "isBackground": true,
+      "dependsOn": ["serve:ui", "serve:client"],
+      "problemMatcher": {
+        "pattern": {
+          "regexp": "."
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "Starting\\.\\.\\.",
+          "endsPattern": "."
+        }
+      }
+    },
+    {
+      "label": "dev",
+      "dependsOn": ["serve:ui", "serve:client", "dev:electron"],
+      "dependsOrder": "parallel",
+      "problemMatcher": []
+    }
+  ]
+}

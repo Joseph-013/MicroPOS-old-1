@@ -1,0 +1,6 @@
+<div data-selectable [class.hidden]="!showValue()" [class.text-muted-foreground]="valueMuted()">
+  <ng-content select="[value]" />
+</div>
+<div #inputSlot [class.hidden]="showValue()">
+  <ng-content select="[input]" />
+</div>

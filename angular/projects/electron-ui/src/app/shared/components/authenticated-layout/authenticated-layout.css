@@ -1,0 +1,14 @@
+a.active {
+  font-weight: 900;
+  text-align: center;
+}
+
+a::before {
+  content: attr(data-text);
+  font-weight: 900;
+  visibility: hidden;
+  height: 0;
+  overflow: hidden;
+  display: block;
+  text-align: center;
+}

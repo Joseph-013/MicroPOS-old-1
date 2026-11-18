@@ -1,0 +1,683 @@
+export { initializeReceiptPrinterHandlers } from "./receipt-printer.controls";
+export { ReceiptPrinterService } from "./printer.service";
+export { PrinterDevice, openPrinterDevice } from "./printer.device";
+export { StandardSalesOrderReceiptTemplate } from "./templates/sales-order-receipt.template";
+export type { ReceiptTemplate } from "./templates/template.interface";
+export { prepareCanvasForPrinter, prepareCanvasFromBase64 } from "./utils/printer-canvas.util";
+export { mmToChars, mmToPixelWidth, formatCurrency } from "./utils/printer-format.util";
+
+// // src/domain/printer/receipt-printer.ts
+// import { BrowserWindow } from "electron";
+// import { usb } from "usb";
+// import ReceiptPrinterEncoder from "@point-of-sale/receipt-printer-encoder";
+// import { MainIPC } from "../../../util/ipc-helpers";
+// import { logger } from "@config/logger";
+// import { ApiResponse, ReceiptConfig, SalesOrderReceiptPayload, UsbDeviceInfo } from "@shared/src";
+// import { UsbDeviceType } from "../usb-device-manager";
+// import * as path from "path";
+// import { createCanvas, loadImage } from "canvas";
+// import { Settings } from "../../../util/settings";
+// import { salesOrderRepository } from "../../sales-orders/sales-order.repository";
+
+// let receiptPrinter: ReceiptPrinterService | null = null;
+// let activeDeviceInfo: UsbDeviceInfo | null = null;
+
+// export const SETTINGS_KEY_RECEIPT_PRINTER_DEVICE = "receipt_printer_saved_device";
+// export const SETTINGS_KEY_RECEIPT_PRINTER_CONFIG = "receipt_printer_saved_config";
+// export const INITIAL_RECEIPT_PRINTER_CONFIG: ReceiptConfig = {
+//   paperWidthMm: 58,
+//   storeName: "-",
+//   storeAddress: "-",
+// };
+
+// export async function initializeReceiptPrinterHandlers(mainWindow: BrowserWindow) {
+//   MainIPC.handleQuery("receipt-printer:connect", async (event, data: { usbDeviceInfo: UsbDeviceInfo }) => {
+//     try {
+//       const { usbDeviceInfo } = data;
+
+//       if (receiptPrinter !== null) {
+//         await receiptPrinter.disconnect();
+//       }
+
+//       const template = new StandardSalesOrderReceiptTemplate();
+//       const initialConfig: ReceiptConfig = {
+//         paperWidthMm:
+//           Settings.get<ReceiptConfig>(SETTINGS_KEY_RECEIPT_PRINTER_CONFIG)?.paperWidthMm ??
+//           INITIAL_RECEIPT_PRINTER_CONFIG.paperWidthMm,
+//         storeName:
+//           Settings.get<ReceiptConfig>(SETTINGS_KEY_RECEIPT_PRINTER_CONFIG)?.storeName ??
+//           INITIAL_RECEIPT_PRINTER_CONFIG.storeName,
+//         storeAddress:
+//           Settings.get<ReceiptConfig>(SETTINGS_KEY_RECEIPT_PRINTER_CONFIG)?.storeAddress ??
+//           INITIAL_RECEIPT_PRINTER_CONFIG.storeAddress,
+//       };
+
+//       receiptPrinter = new ReceiptPrinterService(template, initialConfig);
+//       await receiptPrinter.connect(usbDeviceInfo);
+
+//       Settings.set(SETTINGS_KEY_RECEIPT_PRINTER_DEVICE, usbDeviceInfo);
+
+//       activeDeviceInfo = usbDeviceInfo;
+
+//       logger.info(`🔌 Hardware connection established with physical device: ${usbDeviceInfo.label}`);
+
+//       // Notify frontend that the hardware layer has shifted
+//       MainIPC.sendToWindow(mainWindow, "receipt-printer:onDeviceChange", {
+//         connected: true,
+//         usbDeviceInfo,
+//         config: receiptPrinter.getActiveConfig(),
+//       });
+
+//       return { status: 200, message: "Printer hardware connected successfully" };
+//     } catch (err) {
+//       logger.error(`Receipt printer hardware link failed: ${err}`);
+//       receiptPrinter = null;
+//       activeDeviceInfo = null;
+//       return { status: 500, error: "Receipt printer connection failed." };
+//     }
+//   });
+
+//   MainIPC.handleQuery("receipt-printer:update-config", async (event, newConfig: Partial<ReceiptConfig>) => {
+//     try {
+//       // 1. Fetch current stored config profile to serve as mutation fallback base
+//       const currentConfig = (await Settings.get<ReceiptConfig>(SETTINGS_KEY_RECEIPT_PRINTER_CONFIG)) || {
+//         paperWidthMm: 58,
+//         storeName: "",
+//         storeAddress: "",
+//       };
+
+//       // 2. Merge the incoming partial patch mutations safely
+//       const fullUpdatedConfig: ReceiptConfig = {
+//         ...currentConfig,
+//         ...newConfig,
+//       };
+
+//       console.log("Writing structural configuration updates to storage:", newConfig);
+
+//       // 3. Always persist config values directly to storage
+//       await Settings.set(SETTINGS_KEY_RECEIPT_PRINTER_CONFIG, fullUpdatedConfig);
+
+//       // 4. Hot-apply mutations to runtime hardware wrapper ONLY if device is active
+//       if (receiptPrinter) {
+//         receiptPrinter.updateConfig(newConfig);
+//         logger.info("Synchronized layout boundaries on active receipt printer device session.");
+//       } else {
+//         logger.info(
+//           "Configuration written to disk. Hardware wrapper instance offline; changes will auto-apply on next handshake.",
+//         );
+//       }
+
+//       // 5. Broadcast recalculated parameters cleanly back down to windows
+//       MainIPC.sendToWindow(mainWindow, "receipt-printer:onConfigChange", fullUpdatedConfig);
+
+//       return { status: 200, message: "Configuration adjusted successfully" };
+//     } catch (err) {
+//       logger.error(`Failed to execute partial configuration shift: ${err}`);
+//       return { status: 500, error: String(err) };
+//     }
+//   });
+
+//   MainIPC.handleQuery("receipt-printer:status", async () => {
+//     // 1. Fetch parameters directly from storage so the UI can populate inputs even if printer is offline
+//     const savedDevice = await Settings.get<UsbDeviceInfo>(SETTINGS_KEY_RECEIPT_PRINTER_DEVICE);
+//     console.log(savedDevice);
+//     const savedConfig =
+//       (await Settings.get<ReceiptConfig>(SETTINGS_KEY_RECEIPT_PRINTER_CONFIG)) ?? INITIAL_RECEIPT_PRINTER_CONFIG;
+
+//     return {
+//       // True status checks active physical state runtime flag
+//       connected: receiptPrinter !== null && activeDeviceInfo !== null,
+//       device: savedDevice === activeDeviceInfo ? savedDevice : null,
+//       config: savedConfig,
+//     };
+//   });
+
+//   MainIPC.handleQuery("receipt-printer:disconnect", async () => {
+//     if (receiptPrinter) {
+//       await receiptPrinter.disconnect();
+//       receiptPrinter = null;
+//     }
+//     return { status: 200, message: "Printer safely disconnected" };
+//   });
+
+//   MainIPC.handleQuery("receipt-printer:printById", async (event, id: string) => {
+//     // 1. Pre-flight Check: Defensively spin up driver if settings exist but instance is null
+//     if (!receiptPrinter && Settings.has(SETTINGS_KEY_RECEIPT_PRINTER_DEVICE)) {
+//       logger.info(
+//         `⚠️ Print requested but driver is offline. Attempting proactive recovery handshake for ID [${id}]...`,
+//       );
+//       try {
+//         const savedDevice = await Settings.get<UsbDeviceInfo>(SETTINGS_KEY_RECEIPT_PRINTER_DEVICE);
+//         const savedConfig =
+//           (await Settings.get<ReceiptConfig>(SETTINGS_KEY_RECEIPT_PRINTER_CONFIG)) ?? INITIAL_RECEIPT_PRINTER_CONFIG;
+
+//         if (savedDevice) {
+//           const template = new StandardSalesOrderReceiptTemplate();
+//           receiptPrinter = new ReceiptPrinterService(template, savedConfig);
+//           await receiptPrinter.connect(savedDevice);
+//           activeDeviceInfo = savedDevice;
+//           logger.info(`🔌 Proactive recovery successful before processing data layout.`);
+//         }
+//       } catch (recoveryErr) {
+//         logger.error(`Failed to proactively spin up offline printer instance: ${recoveryErr}`);
+//         return { status: 400, error: "No active printer connection found and auto-recovery failed." };
+//       }
+//     }
+
+//     // Guard Clause: If it's still missing, eject completely
+//     if (!receiptPrinter) {
+//       return { status: 400, error: "No active printer driver connection found." };
+//     }
+
+//     try {
+//       const response = await salesOrderRepository.getByIdWithSalesOrderItems(id);
+
+//       if (response.status !== 200 || !response.data) {
+//         return response;
+//       }
+
+//       const salesOrder = response.data;
+//       const barcodeProtocolPayload = `sales-order://${salesOrder.id}`;
+
+//       const printPayload: SalesOrderReceiptPayload = {
+//         datetimeISO: salesOrder.createdAt,
+//         grandTotal: salesOrder.snapshotTotalAmount,
+//         amountTendered: salesOrder.amountTendered,
+//         changeAmount: salesOrder.changeAmount,
+//         orderNumber: salesOrder.orderNumber,
+//         orderNumberURI: barcodeProtocolPayload,
+//         tableData: salesOrder.salesOrderItems.map((item) => ({
+//           name: item.snapshotName,
+//           price: item.snapshotPrice,
+//           quantity: item.quantity,
+//         })),
+//       };
+
+//       try {
+//         // First Attempt to fire the compiled bytes down the raw USB bulk line 🚀
+//         await receiptPrinter.print(printPayload);
+//       } catch (printError: any) {
+//         const errorString = String(printError);
+
+//         // 2. Mid-flight Check: Intercept explicit connection loss or pipe disconnection bugs
+//         if (
+//           errorString.includes("Disconnected") ||
+//           errorString.includes("transferOut") ||
+//           errorString.includes("not found")
+//         ) {
+//           logger.warn(`🔄 Physical pipe disconnection detected mid-print for ID [${id}]. Attempting hot reconnect...`);
+
+//           // Forcefully clear the corrupted runtime wrappers safely
+//           try {
+//             await receiptPrinter.disconnect().catch(() => {});
+//           } catch {}
+//           receiptPrinter = null;
+//           activeDeviceInfo = null;
+
+//           // Fetch parameters from storage to perform a mid-flight handshake
+//           const savedDevice = await Settings.get<UsbDeviceInfo>(SETTINGS_KEY_RECEIPT_PRINTER_DEVICE);
+//           const savedConfig =
+//             (await Settings.get<ReceiptConfig>(SETTINGS_KEY_RECEIPT_PRINTER_CONFIG)) ?? INITIAL_RECEIPT_PRINTER_CONFIG;
+
+//           if (!savedDevice) {
+//             throw new Error("Cannot execute hot reconnect because saved device profile missing from storage keys.");
+//           }
+
+//           // Re-instantiate service context
+//           const template = new StandardSalesOrderReceiptTemplate();
+//           receiptPrinter = new ReceiptPrinterService(template, savedConfig);
+//           await receiptPrinter.connect(savedDevice);
+//           activeDeviceInfo = savedDevice;
+
+//           logger.info(`🔌 Hot reconnect established. Retrying print instructions for order: ${salesOrder.orderNumber}`);
+
+//           // Second Attempt: Try writing the payload data one more time on the fresh handle
+//           await receiptPrinter.print(printPayload);
+//         } else {
+//           // If it's a completely different error (e.g. template parsing fault), re-throw immediately
+//           throw printError;
+//         }
+//       }
+
+//       return {
+//         status: 200,
+//         message: `Receipt print instructions successfully sent for Order Number: ${salesOrder.orderNumber}`,
+//       };
+//     } catch (err) {
+//       logger.error(`Subsystem print thread failure for ID [${id}]: ${err}`);
+
+//       // Nullify references if the retry also threw a connection failure to keep state clean
+//       if (String(err).includes("Disconnected") || String(err).includes("transferOut")) {
+//         receiptPrinter = null;
+//         activeDeviceInfo = null;
+//       }
+
+//       return { status: 500, error: `Hardware Device Failure: ${String(err)}` };
+//     }
+//   });
+
+//   MainIPC.handleQuery(
+//     "receipt-printer:printRawImage",
+//     async (event, data: { base64Image: string; width?: number; height?: number }) => {
+//       // Pre-flight Connection Recovery Logic...
+//       if (!receiptPrinter && Settings.has(SETTINGS_KEY_RECEIPT_PRINTER_DEVICE)) {
+//         try {
+//           const savedDevice = await Settings.get<UsbDeviceInfo>(SETTINGS_KEY_RECEIPT_PRINTER_DEVICE);
+//           const savedConfig =
+//             (await Settings.get<ReceiptConfig>(SETTINGS_KEY_RECEIPT_PRINTER_CONFIG)) ?? INITIAL_RECEIPT_PRINTER_CONFIG;
+//           if (savedDevice) {
+//             const template = new StandardSalesOrderReceiptTemplate();
+//             receiptPrinter = new ReceiptPrinterService(template, savedConfig);
+//             await receiptPrinter.connect(savedDevice);
+//             activeDeviceInfo = savedDevice;
+//           }
+//         } catch (err) {
+//           logger.error(`Proactive recovery failed: ${err}`);
+//           return { status: 400, error: "Printer connection dropped and recovery failed." };
+//         }
+//       }
+
+//       if (!receiptPrinter) {
+//         return { status: 400, error: "No active printer connection found." };
+//       }
+
+//       try {
+//         const paperWidthMm = receiptPrinter.getActiveConfig().paperWidthMm;
+//         const paperPixelWidth = paperWidthMm >= 80 ? 576 : 384;
+
+//         // 1. Convert the Base64 image string back into a standard binary node buffer
+//         // Strips out the 'data:image/png;base64,' prefix metadata if present
+//         const base64Data = data.base64Image.replace(/^data:image\/\w+;base64,/, "");
+//         const imageBuffer = Buffer.from(base64Data, "base64");
+
+//         // 2. Load the binary block into Node-Canvas (This handles standard PNG formats)
+//         const img = await loadImage(imageBuffer);
+//         const nativeAspectRatio = img.height / img.width;
+
+//         let computedWidth: number;
+//         let computedHeight: number;
+
+//         // 3. Resolve scale boundaries
+//         if (data.width !== undefined && data.height !== undefined) {
+//           computedWidth = data.width;
+//           computedHeight = data.height;
+//         } else if (data.height !== undefined) {
+//           computedHeight = data.height;
+//           computedWidth = computedHeight / nativeAspectRatio;
+//         } else {
+//           const requestedWidth = data.width ?? paperPixelWidth;
+//           computedWidth = Math.min(requestedWidth, paperPixelWidth);
+//           computedHeight = computedWidth * nativeAspectRatio;
+//         }
+
+//         const alignTo8 = (n: number) => Math.max(8, Math.round(n / 8) * 8);
+//         const finalWidth = alignTo8(computedWidth);
+//         const finalHeight = alignTo8(computedHeight);
+
+//         console.log({ finalWidth, finalHeight });
+
+//         // 4. Draw onto aligned canvas to extract clean structural pixel bitmasks
+//         const targetCanvas = createCanvas(finalWidth, finalHeight);
+//         const ctx = targetCanvas.getContext("2d");
+//         ctx.fillStyle = "#ffffff";
+//         ctx.fillRect(0, 0, finalWidth, finalHeight);
+//         ctx.drawImage(img, 0, 0, finalWidth, finalHeight);
+
+//         // 5. Run parameters through the POS Encoder pipeline
+//         const encoder = new ReceiptPrinterEncoder({
+//           language: "esc-pos",
+//           width: Math.floor((paperWidthMm / 58) * 32),
+//           codepage: "windows1252",
+//           feedBeforeCut: 2,
+//           imageMode: "column",
+//         });
+
+//         const printerBytes = encoder
+//           .initialize()
+//           .align("center")
+//           .image(
+//             targetCanvas, // 🚀 Pass the Node-Canvas instance directly!
+//             finalWidth, // 2. width
+//             finalHeight, // 3. height
+//             "threshold", // 4. mode
+//           )
+//           .cut()
+//           .encode();
+
+//         // 6. Direct hardware bus injection
+//         await receiptPrinter.printRawBytes(printerBytes);
+
+//         return { status: 200, message: "Sticker array compiled and written successfully." };
+//       } catch (err) {
+//         logger.error(`Subsystem raw image printing thread failure: ${err}`);
+//         return { status: 500, error: `Hardware Processing Error: ${String(err)}` };
+//       }
+//     },
+//   );
+
+//   // =========================================================================
+//   // AUTO-CONNECT PROCESSOR ON STARTUP
+//   // =========================================================================
+//   console.log("Checking for settings usb device");
+//   if (Settings.has(SETTINGS_KEY_RECEIPT_PRINTER_DEVICE) && Settings.has(SETTINGS_KEY_RECEIPT_PRINTER_CONFIG)) {
+//     console.log("Auto-connecting saved USB Printer Device");
+
+//     try {
+//       logger.info("⚙️ Auto-detecting saved receipt printer configuration profile...");
+
+//       const savedDevice = await Settings.get<UsbDeviceInfo>(SETTINGS_KEY_RECEIPT_PRINTER_DEVICE);
+
+//       const savedConfig =
+//         Settings.get<ReceiptConfig>(SETTINGS_KEY_RECEIPT_PRINTER_CONFIG) ?? INITIAL_RECEIPT_PRINTER_CONFIG;
+
+//       if (!savedDevice) {
+//         throw new Error("Saved device signature profile is null or malformed.");
+//       } else {
+//         console.log("Saved device detected: ", savedDevice);
+//       }
+
+//       const template = new StandardSalesOrderReceiptTemplate();
+//       receiptPrinter = new ReceiptPrinterService(template, savedConfig);
+//       await receiptPrinter.connect(savedDevice);
+
+//       activeDeviceInfo = savedDevice;
+//       logger.info(`🔌 Auto-connection successful: ${savedDevice.label}`);
+//       MainIPC.sendToWindow(mainWindow, "receipt-printer:onAutoConnect", {
+//         status: 200,
+//         data: `🔌 Auto-connection successful: ${savedDevice.label}`,
+//       } satisfies ApiResponse<string>);
+//     } catch (err) {
+//       logger.warn(`⚠️ Failed to execute startup printer auto-connect sequence: ${err}`);
+//       console.error(`⚠️ Failed to execute startup printer auto-connect sequence: ${err}`);
+//       MainIPC.sendToWindow(mainWindow, "receipt-printer:onAutoConnect", {
+//         status: 500,
+//         data: `Failed to execute startup printer auto-connect sequence`,
+//       } satisfies ApiResponse<string>);
+//       receiptPrinter = null;
+//       activeDeviceInfo = null;
+//     }
+//   }
+// }
+
+// interface ReceiptTemplate<TPayload> {
+//   build(encoder: ReceiptPrinterEncoder, payload: TPayload, config: ReceiptConfig): void;
+// }
+
+// export class PrinterDevice {
+//   constructor(
+//     private readonly device: UsbDeviceType,
+//     private readonly endpointNumber: number,
+//     private readonly packetSize: number,
+//   ) {}
+
+//   async write(data: Uint8Array): Promise<void> {
+//     for (let i = 0; i < data.length; i += this.packetSize) {
+//       const chunk = data.slice(i, i + this.packetSize);
+//       await this.device.nativeTransferOut(this.endpointNumber, 5000, chunk);
+//     }
+//   }
+
+//   async release(interfaceNumber: number): Promise<void> {
+//     try {
+//       await this.device.releaseInterface(interfaceNumber);
+//       await this.device.close();
+//     } catch (err) {
+//       logger.warn(`Failed to release printer device: ${err}`);
+//     }
+//   }
+// }
+
+// class ReceiptPrinterService {
+//   private printer: PrinterDevice | null = null;
+//   private encoder!: ReceiptPrinterEncoder;
+//   private activeInterfaceNumber: number | null = null;
+
+//   constructor(
+//     private template: ReceiptTemplate<unknown>,
+//     private config: ReceiptConfig,
+//   ) {
+//     this.buildEncoder(config);
+//   }
+
+//   private buildEncoder(config: ReceiptConfig): void {
+//     this.encoder = new ReceiptPrinterEncoder({
+//       language: "esc-pos",
+//       width: mmToChars(config.paperWidthMm),
+//       codepage: "windows1252",
+//       feedBeforeCut: 2,
+//       imageMode: "column",
+//     });
+//   }
+
+//   public getActiveConfig(): ReceiptConfig {
+//     return this.config;
+//   }
+
+//   async connect(deviceInfo: UsbDeviceInfo): Promise<void> {
+//     const device = await openPrinterDevice(deviceInfo);
+//     this.activeInterfaceNumber = device.interfaceNumber;
+//     this.printer = new PrinterDevice(device.device, device.endpointNumber, device.packetSize);
+//   }
+
+//   public updateConfig(newConfig: Partial<ReceiptConfig>): void {
+//     this.config = {
+//       ...this.config,
+//       ...newConfig,
+//     };
+
+//     this.buildEncoder(this.config);
+//   }
+
+//   async print(payload: unknown): Promise<void> {
+//     if (!this.printer) throw new Error("Printer not connected");
+//     this.encoder.initialize();
+//     await this.template.build(this.encoder, payload, this.config);
+//     const bytes = this.encoder.encode();
+//     await this.printer.write(bytes);
+//   }
+
+//   async printRawBytes(bytes: Uint8Array): Promise<void> {
+//     await this.printer?.write(bytes);
+//   }
+
+//   async disconnect(): Promise<void> {
+//     if (this.printer && this.activeInterfaceNumber !== null) {
+//       await this.printer.release(this.activeInterfaceNumber);
+//     }
+//     this.printer = null;
+//     this.activeInterfaceNumber = null;
+//   }
+// }
+
+// export class StandardSalesOrderReceiptTemplate implements ReceiptTemplate<SalesOrderReceiptPayload> {
+//   async build(encoder: ReceiptPrinterEncoder, payload: SalesOrderReceiptPayload, config: ReceiptConfig): Promise<void> {
+//     const charPerRow = mmToChars(config.paperWidthMm);
+//     const pixelWidth = mmToPixelWidth(config.paperWidthMm);
+
+//     const qtyColumnWidth = Math.floor(charPerRow * 0.26);
+//     const totalColumnWidth = Math.floor(charPerRow * 0.26);
+//     const marginBetweenColumns = 1;
+//     const itemColumnWidth = charPerRow - qtyColumnWidth - totalColumnWidth - marginBetweenColumns * 2;
+
+//     const halfWidth = Math.floor(charPerRow / 2);
+
+//     const divider = (symbol = "-") => symbol.repeat(charPerRow);
+//     const total = payload.grandTotal;
+
+//     const storeLogoPath = path.join(__dirname, "assets", "images", "logo", "store_logo_black.png");
+//     const microposLogoPath = path.join(__dirname, "assets", "images", "logo", "black.png");
+
+//     const [storeLogoCanvas, microposLogoCanvas] = await Promise.all([
+//       prepareCanvasForPrinter(storeLogoPath, pixelWidth),
+//       prepareCanvasForPrinter(microposLogoPath, pixelWidth, { width: 144 }),
+//     ]);
+
+//     encoder
+//       .initialize()
+//       .newline()
+//       .align("center")
+//       .image(storeLogoCanvas, storeLogoCanvas.width, storeLogoCanvas.height, "threshold")
+//       .newline()
+//       .line(config.storeName)
+//       .newline()
+//       .line(config.storeAddress)
+//       .newline()
+//       .align("left")
+//       .line(`Order Number: ${payload.orderNumber}`)
+//       .line(`Date: ${new Date(payload.datetimeISO).toLocaleString()}`)
+//       .line(divider("*"))
+//       .table(
+//         [
+//           { width: itemColumnWidth, marginRight: marginBetweenColumns, align: "left" },
+//           { width: qtyColumnWidth, marginRight: marginBetweenColumns, align: "left" },
+//           { width: totalColumnWidth, align: "right" },
+//         ],
+//         payload.tableData.map((entry) => [
+//           `${entry.name}\n`,
+//           `@${formatCurrency(entry.price / 100)}\nx${entry.quantity}`,
+//           `${formatCurrency((entry.price * entry.quantity) / 100)}\n`,
+//         ]),
+//       )
+//       .line(divider())
+//       .bold(true)
+//       .table(
+//         [
+//           { width: halfWidth, align: "left" },
+//           { width: halfWidth, align: "right" },
+//         ],
+//         [["GRAND TOTAL:", formatCurrency(total / 100)]],
+//       )
+//       .bold(false)
+//       .newline()
+//       .table(
+//         [
+//           { width: halfWidth, align: "left" },
+//           { width: halfWidth, align: "right" },
+//         ],
+//         [
+//           ["Amount Tendered:", formatCurrency(payload.amountTendered / 100)],
+//           ["Change Provided:", formatCurrency(payload.changeAmount / 100)],
+//         ],
+//       )
+//       .line(divider("*"))
+//       .newline()
+//       .align("center")
+//       .line("This is an order slip. Return and ask for your Official Receipt or Sales Invoice.")
+//       .newline()
+//       .italic(true)
+//       .line("THIS DOCUMENT IS NOT VALID FOR CLAIM OF INPUT TAX")
+//       .italic(false)
+//       .newline()
+//       .line("Powered by:")
+//       .image(microposLogoCanvas, microposLogoCanvas.width, microposLogoCanvas.height, "threshold")
+//       .newline()
+//       .newline()
+//       .qrcode(payload.orderNumberURI, 1, 8, "h")
+//       .cut();
+//   }
+// }
+
+// function mmToChars(mm: number): number {
+//   return Math.floor((mm / 58) * 32);
+// }
+
+// function mmToPixelWidth(mm: number): number {
+//   return mm >= 80 ? 576 : 384;
+// }
+
+// function formatCurrency(value: number): string {
+//   return value.toLocaleString("en-PH", {
+//     minimumFractionDigits: 2,
+//     maximumFractionDigits: 2,
+//   });
+// }
+
+// export async function openPrinterDevice(
+//   deviceInfo: UsbDeviceInfo,
+// ): Promise<{ device: UsbDeviceType } & PrinterInterface> {
+//   const devices = await usb.getDevices();
+//   const device = devices.find(
+//     (d) =>
+//       d.vendorId === deviceInfo.vendorId &&
+//       d.productId === deviceInfo.productId &&
+//       (d.serialNumber ?? "") === deviceInfo.serialNumber,
+//   );
+
+//   if (!device) throw new Error("Printer device not found");
+
+//   await device.open();
+
+//   if (device.configuration?.bConfigurationValue !== 1) {
+//     try {
+//       await device.selectConfiguration(1);
+//     } catch (err) {
+//       logger.warn(`Failed to set USB configuration: ${err}`);
+//     }
+//   }
+
+//   const iface = findPrinterInterface(device);
+//   if (!iface) throw new Error("No USB Printer class interface (class 7) found on device");
+
+//   try {
+//     await device.detachKernelDriver(iface.interfaceNumber);
+//   } catch {
+//     // kernel driver may not be attached — not an error
+//   }
+
+//   try {
+//     await device.claimInterface(iface.interfaceNumber);
+//   } catch (err) {
+//     throw new Error(`Failed to claim interface ${iface.interfaceNumber}: ${err}`);
+//   }
+
+//   return { device, ...iface };
+// }
+
+// interface PrinterInterface {
+//   interfaceNumber: number;
+//   endpointNumber: number;
+//   packetSize: number;
+// }
+
+// function findPrinterInterface(device: UsbDeviceType): PrinterInterface | null {
+//   for (const config of device.configurations) {
+//     for (const iface of config.interfaces) {
+//       const alt = iface.alternate;
+//       if (alt.interfaceClass === 7) {
+//         const outEndpoint = alt.endpoints.find((e: any) => e.direction === "out" && e.type === "bulk");
+//         if (outEndpoint) {
+//           return {
+//             interfaceNumber: iface.interfaceNumber,
+//             endpointNumber: outEndpoint.endpointNumber,
+//             packetSize: outEndpoint.packetSize,
+//           };
+//         }
+//       }
+//     }
+//   }
+//   return null;
+// }
+
+// interface CanvasOptions {
+//   width?: number;
+//   height?: number;
+// }
+
+// export async function prepareCanvasForPrinter(imagePath: string, paperPixelWidth: number, options: CanvasOptions = {}) {
+//   const image = await loadImage(imagePath);
+//   const aspectRatio = image.height / image.width;
+
+//   const alignTo8 = (n: number) => Math.max(8, Math.round(n / 8) * 8);
+
+//   const targetWidth = alignTo8(options.width ?? paperPixelWidth);
+//   const targetHeight = alignTo8(options.height ?? targetWidth * aspectRatio);
+
+//   const canvas = createCanvas(targetWidth, targetHeight);
+//   const ctx = canvas.getContext("2d");
+
+//   ctx.fillStyle = "#ffffff";
+//   ctx.fillRect(0, 0, targetWidth, targetHeight);
+//   ctx.drawImage(image, 0, 0, targetWidth, targetHeight);
+
+//   return canvas;
+// }

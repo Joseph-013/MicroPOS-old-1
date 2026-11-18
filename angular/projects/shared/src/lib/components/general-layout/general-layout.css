@@ -1,0 +1,26 @@
+.scroll-viewport {
+  scroll-timeline-name: --page-scroll;
+  scroll-timeline-axis: y;
+}
+
+.topbar {
+  animation: shrink-header linear both;
+  animation-timeline: --page-scroll;
+  animation-range: 2rem 5rem;
+}
+
+@keyframes shrink-header {
+  from {
+    height: 3.5rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+
+  to {
+    height: 2.5rem;
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+    background-color: rgb(from var(--color-background) r g b / 0.25);
+    backdrop-filter: blur(8px);
+  }
+}

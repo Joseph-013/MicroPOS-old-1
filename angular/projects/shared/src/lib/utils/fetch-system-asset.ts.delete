@@ -1,0 +1,31 @@
+import { ApiResponse } from '@micropos/shared/src';
+import { Asset } from '../types/asset';
+
+export const fetchSystemAsset = async (key: string): Promise<Asset | null> => {
+  switch (key) {
+    case 'logo': {
+      try {
+        const response = await window.electronAPI.invoke<ApiResponse<{ filename: string }>>(
+          'system-assets:getMicroposLogo',
+        );
+
+        if (response.status === 200 && response.data) {
+          return {
+            filename: response.data.filename,
+            url: `micropos://asset/images/logo/${response.data.filename}`,
+          };
+        }
+        return null;
+      } catch (error) {
+        console.log(error);
+        return null;
+      }
+    }
+  }
+
+  return null;
+};
+
+export const getAssetUrl = (path: string): string => {
+  return `micropos://asset/${path}`;
+};

@@ -1,0 +1,232 @@
+<div class="table-control__control">
+  <div class="control__header">
+    <h3 class="control__title">
+      @switch (formMode()) {
+        @case ('creating') {
+          Create Item
+        }
+        @case ('editing') {
+          Edit Item
+        }
+        @case ('viewing') {
+          View Item
+        }
+      }
+    </h3>
+    @if (formMode()) {
+      <button
+        hlmBtn
+        variant="ghost"
+        (click)="dismiss()"
+        class="control__dismiss-button"
+        size="icon-lg"
+      >
+        <ng-icon hlm name="lucideXCircle" />
+      </button>
+    }
+  </div>
+
+  @if (formMode() !== null) {
+    <form
+      [formRoot]="itemForm"
+      [toggleFieldMode]="formMode() === 'viewing' ? 'read' : 'write'"
+      class="control__form"
+    >
+      <hlm-field-group>
+        <hlm-field>
+          <label hlmFieldLabel>Barcode</label>
+          <lib-toggle-field>
+            <span value clickToCopy>
+              {{ _model().barcode || '-' }}
+            </span>
+            <div input class="flex flex-col">
+              <input
+                hlmInput
+                [formField]="itemForm.barcode"
+                placeholder="-"
+                (blur)="scanServiceFocus.set('root')"
+                (focus)="scanServiceFocus.set('item-crud-controls-barcode-input')"
+              />
+              @for (error of itemForm.barcode().errors(); track error.kind) {
+                <hlm-field-error [validator]="error.kind">
+                  {{ error.message }}
+                </hlm-field-error>
+              }
+            </div>
+          </lib-toggle-field>
+        </hlm-field>
+        <hlm-field>
+          <label hlmFieldLabel>PLU</label>
+          <lib-toggle-field>
+            <span value clickToCopy>
+              {{ _model().plu || '-' }}
+            </span>
+            <div input class="flex flex-col">
+              <input hlmInput [formField]="itemForm.plu" placeholder="-" />
+              @for (error of itemForm.plu().errors(); track error.kind) {
+                <hlm-field-error [validator]="error.kind">
+                  {{ error.message }}
+                </hlm-field-error>
+              }
+            </div>
+          </lib-toggle-field>
+        </hlm-field>
+        <hlm-field>
+          <label hlmFieldLabel>SKU</label>
+          <lib-toggle-field>
+            <span value clickToCopy>
+              {{ _model().sku || '-' }}
+            </span>
+            <div input class="flex flex-col">
+              <input hlmInput [formField]="itemForm.sku" placeholder="-" />
+              @for (error of itemForm.sku().errors(); track error.kind) {
+                <hlm-field-error [validator]="error.kind">
+                  {{ error.message }}
+                </hlm-field-error>
+              }
+            </div>
+          </lib-toggle-field>
+        </hlm-field>
+        <hlm-field>
+          <label hlmFieldLabel>Name</label>
+          <lib-toggle-field>
+            <span value clickToCopy>
+              {{ _model().name }}
+            </span>
+            <div input class="flex flex-col">
+              <input hlmInput [formField]="itemForm.name" placeholder="-" />
+              @for (error of itemForm.name().errors(); track error.kind) {
+                <hlm-field-error [validator]="error.kind">
+                  {{ error.message }}
+                </hlm-field-error>
+              }
+            </div>
+          </lib-toggle-field>
+        </hlm-field>
+        <hlm-field>
+          <label hlmFieldLabel>Price Mode</label>
+          <lib-toggle-field>
+            <span value>{{ PriceModeToLabelMap['fixed'] }}</span>
+            <div input class="flex flex-col">
+              <hlm-select [formField]="itemForm.priceMode" [itemToString]="modeToString">
+                <hlm-select-trigger class="w-full">
+                  <hlm-select-value placeholder="Default: Fixed" />
+                </hlm-select-trigger>
+                <hlm-select-content *hlmSelectPortal>
+                  <hlm-select-group>
+                    <hlm-select-label>Price Modes</hlm-select-label>
+                    @for (mode of PriceModeOptions; track mode.value) {
+                      <hlm-select-item [value]="mode.value">
+                        {{ mode.label }}
+                      </hlm-select-item>
+                    }
+                  </hlm-select-group>
+                </hlm-select-content>
+              </hlm-select>
+              @for (error of itemForm.price().errors(); track error.kind) {
+                <hlm-field-error [validator]="error.kind">
+                  {{ error.message }}
+                </hlm-field-error>
+              }
+            </div>
+          </lib-toggle-field>
+        </hlm-field>
+        <hlm-field>
+          <label hlmFieldLabel>Price</label>
+          <lib-toggle-field>
+            <span value clickToCopy>{{ _model().price | currency: 'PHP' }} </span>
+            <div input class="flex flex-col">
+              <hlm-input-group>
+                <hlm-input-group-addon> ₱ </hlm-input-group-addon>
+                <input
+                  hlmInputGroupInput
+                  [formField]="itemForm.price"
+                  type="number"
+                  placeholder="-"
+                />
+              </hlm-input-group>
+              @for (error of itemForm.price().errors(); track error.kind) {
+                <hlm-field-error [validator]="error.kind">
+                  {{ error.message }}
+                </hlm-field-error>
+              }
+            </div>
+          </lib-toggle-field>
+        </hlm-field>
+
+        @if (formMode() !== 'creating') {
+          <hlm-field>
+            <label hlmFieldLabel>Created At</label>
+            <lib-toggle-field>
+              <span value clickToCopy> {{ _model().createdAt | date: 'MMMM, dd, yyyy' }} </span>
+            </lib-toggle-field>
+          </hlm-field>
+          <hlm-field>
+            <label hlmFieldLabel>Updated At</label>
+            <lib-toggle-field>
+              <span value clickToCopy> {{ _model().updatedAt | date: 'MMMM, dd, yyyy' }} </span>
+            </lib-toggle-field>
+          </hlm-field>
+          <hlm-field>
+            <label hlmFieldLabel>Deleted At</label>
+            <lib-toggle-field>
+              <span value clickToCopy>
+                {{ (_model().deletedAt | date: 'MMMM, dd, yyyy') || '-' }}
+              </span>
+            </lib-toggle-field>
+          </hlm-field>
+        }
+      </hlm-field-group>
+    </form>
+  } @else {
+    <div class="control__idle-container">
+      <button hlmBtn variant="outline" (click)="formMode.set('creating'); resetForm()">
+        <ng-icon name="lucideCirclePlus" />
+        Create
+      </button>
+      <span>or</span>
+      <span class="control__idle-text">
+        <ng-icon name="lucideArrowRightFromLine" /> Select from list to view item</span
+      >
+    </div>
+  }
+  <div class="control__footer">
+    @if (formMode() === 'viewing') {
+      <button hlmBtn variant="secondary" (click)="formMode.set('editing')">
+        <ng-icon name="lucideEdit" />
+        Edit
+      </button>
+      <!-- <button hlmBtn variant="secondary" (click)="handlePrintPriceTag()">
+        <ng-icon name="lucidePrinter" />
+        Price Tag
+      </button> -->
+      @if (patchItem()?.deletedAt === null) {
+        <button hlmBtn variant="destructive" (click)="onDelete.emit(patchItem()!)">
+          <ng-icon name="lucideTrash" />
+          Delete
+        </button>
+      } @else {
+        <button hlmBtn variant="secondary" (click)="onRestore.emit(patchItem()!)">
+          <ng-icon name="lucideArchiveRestore" />
+          Restore
+        </button>
+      }
+    } @else if (formMode() !== null) {
+      <button hlmBtn variant="outline" (click)="cancelOperation()">Cancel</button>
+    }
+    <div class="control__footer-separator"></div>
+    @if (formMode() === 'editing' || formMode() === 'creating') {
+      <button hlmBtn (click)="onSubmit()">
+        @if (formMode() === 'editing') {
+          <ng-icon name="lucideSave" />
+          Save
+        } @else if (formMode() === 'creating') {
+          <ng-icon name="lucidePackagePlus" />
+          Create
+        }
+      </button>
+    }
+  </div>
+</div>
+
+<!-- <app-price-tag [(data)]="priceTagData" /> -->

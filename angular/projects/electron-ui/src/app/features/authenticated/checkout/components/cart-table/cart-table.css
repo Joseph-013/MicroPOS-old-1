@@ -1,0 +1,40 @@
+@reference "../../../../../../styles.css";
+
+:host {
+  @apply contents;
+}
+
+@keyframes continuousPulse {
+
+  0%,
+  100% {
+    background-color: transparent;
+  }
+
+  50% {
+    background-color: rgb(14 165 233 / 0.22);
+  }
+}
+
+@keyframes stopAfterTwoSeconds {
+
+  0%,
+  90% {
+    opacity: 1;
+  }
+
+  100% {
+    background-color: transparent;
+  }
+}
+
+.animate-scan-pulse-2s {
+  animation:
+    continuousPulse 1000ms ease-in-out infinite,
+    stopAfterTwoSeconds 2s step-end 1 forwards;
+  will-change: background-color;
+}
+
+tr.active {
+  @apply bg-accent/80;
+}

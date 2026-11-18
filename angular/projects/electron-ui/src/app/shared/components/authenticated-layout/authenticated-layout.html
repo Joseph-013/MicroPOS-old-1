@@ -1,0 +1,79 @@
+<lib-general-layout>
+  <div topbar class="flex flex-1 items-center justify-between">
+    <lib-logo size="large" />
+    <nav hlmNavigationMenu>
+      <ul hlmNavigationMenuList class="flex gap-3">
+        <li hlmNavigationMenuItem>
+          <a
+            hlmNavigationMenuLink
+            routerLinkActive="active"
+            data-text="Items"
+            routerLink="/authenticated/items"
+            >Items</a
+          >
+        </li>
+        <li hlmNavigationMenuItem>
+          <a
+            hlmNavigationMenuLink
+            routerLinkActive="active"
+            data-text="Sales Orders"
+            routerLink="/authenticated/sales-orders"
+            >Sales Orders</a
+          >
+        </li>
+        <li hlmNavigationMenuItem>
+          <a
+            hlmNavigationMenuLink
+            routerLinkActive="active"
+            data-text="Checkout"
+            routerLink="/authenticated/checkout"
+            >Checkout</a
+          >
+        </li>
+        <li class="flex">
+          <hlm-separator orientation="vertical" class="h-8" />
+        </li>
+        <li class="flex items-center justify-center">
+          <button
+            hlmBtn
+            variant="outline"
+            size="sm"
+            class="aspect-square w-fit bg-transparent"
+            [hlmDropdownMenuTrigger]="accountMenu"
+            align="end"
+          >
+            <ng-icon hlm name="lucideMenu" />
+          </button>
+          <ng-template #accountMenu>
+            <hlm-dropdown-menu class="w-45">
+              <hlm-dropdown-menu-label>System</hlm-dropdown-menu-label>
+              <hlm-dropdown-menu-group class="flex flex-col gap-1">
+                <a hlmDropdownMenuItem>
+                  <ng-icon hlm name="lucideQrCode" size="sm" />
+                  Connect Client
+                </a>
+                <a hlmDropdownMenuItem routerLink="/authenticated/settings">
+                  <ng-icon hlm name="lucideSettings" size="sm" />
+                  Settings
+                </a>
+              </hlm-dropdown-menu-group>
+              <hlm-dropdown-menu-separator />
+              <hlm-dropdown-menu-label>My Account</hlm-dropdown-menu-label>
+              <hlm-dropdown-menu-group class="flex flex-col gap-1">
+                <a hlmDropdownMenuItem routerLink="/authenticated/profile">
+                  <ng-icon hlm name="lucideUser" size="sm" />
+                  Profile
+                </a>
+                <a hlmDropdownMenuItem (click)="logout()">
+                  <ng-icon hlm name="lucideLogOut" size="sm" />
+                  Logout
+                </a>
+              </hlm-dropdown-menu-group>
+            </hlm-dropdown-menu>
+          </ng-template>
+        </li>
+      </ul>
+    </nav>
+  </div>
+  <router-outlet content />
+</lib-general-layout>

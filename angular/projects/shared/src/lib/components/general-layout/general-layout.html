@@ -1,0 +1,19 @@
+<div class="relative flex h-dvh w-screen flex-col overflow-hidden">
+  <!-- global banner -->
+  <header class="bg-primary text-primary-foreground flex items-center justify-center px-2 text-sm">
+    <!-- <span class="h-5">
+      Lorem ipsum dolor sit, amet consectetur adipisicing elit. Praesentium, explicabo. Error id
+      totam deleniti expedita, laudantium
+    </span> -->
+  </header>
+  <div class="scroll-viewport flex flex-1 flex-col overflow-y-auto">
+    <div
+      class="topbar bg-secondary text-secondary-foreground border-accent sticky top-0 z-10 flex h-14 w-full shrink-0 items-center justify-center border-b px-4 py-2 shadow"
+    >
+      <ng-content select="[topbar]" />
+    </div>
+    <main class="content min-h-0 flex-1 p-4">
+      <ng-content select="[content]" />
+    </main>
+  </div>
+</div>

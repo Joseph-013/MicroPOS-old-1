@@ -1,0 +1,7 @@
+import { Asset } from '@angular-shared';
+
+export const fetchStoreAsset = async (keyy: string): Promise<Asset | null> => {
+  switch(key) {
+    case ''
+  }
+};

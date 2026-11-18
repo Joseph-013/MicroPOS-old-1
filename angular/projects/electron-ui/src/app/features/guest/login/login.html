@@ -1,0 +1,77 @@
+<div class="flex h-full items-center justify-center">
+  <hlm-card class="w-full max-w-120">
+    <hlm-card-header>
+      <h3 hlmCardTitle>
+        <lib-logo size="large" />
+      </h3>
+      <p hlmCardDescription>Provide your credentials to log in.</p>
+    </hlm-card-header>
+    <div hlmCardContent>
+      <form [formRoot]="loginForm" class="flex flex-col gap-3" id="form-login">
+        <hlm-field>
+          <label hlmFieldLabel for="username">
+            Username
+            <span class="text-destructive">*</span>
+          </label>
+          <input
+            hlmInput
+            type="text"
+            id="username"
+            placeholder="-"
+            [formField]="loginForm.username"
+          />
+          @for (error of loginForm.username().errors(); track error) {
+            <hlm-field-error [validator]="error.kind">
+              {{ error.message }}
+            </hlm-field-error>
+          }
+        </hlm-field>
+        <hlm-field>
+          <label hlmFieldLabel for="password">
+            Password
+            <span class="text-destructive">*</span>
+          </label>
+          <!-- use input group for password reveal button -->
+          <hlm-input-group>
+            <input
+              hlmInputGroupInput
+              hlmInput
+              [type]="passwordVisible() ? 'text' : 'password'"
+              id="password"
+              placeholder="-"
+              [formField]="loginForm.password"
+            />
+            <hlm-input-group-addon align="inline-end">
+              <button
+                hlmInputGroupButton
+                hlmBtn
+                (click)="togglePasswordVisibility()"
+                [variant]="passwordVisible() ? 'destructive' : null"
+              >
+                @if (passwordVisible()) {
+                  <ng-icon name="lucideEye" />
+                } @else {
+                  <ng-icon name="lucideEyeOff" />
+                }
+              </button>
+            </hlm-input-group-addon>
+          </hlm-input-group>
+          @for (error of loginForm.password().errors(); track error) {
+            <hlm-field-error [validator]="error.kind">
+              {{ error.message }}
+            </hlm-field-error>
+          }
+        </hlm-field>
+      </form>
+    </div>
+    <hlm-card-footer>
+      <hlm-field orientation="horizontal">
+        <button hlmBtn variant="outline" (click)="reset()">Reset</button>
+        <button hlmBtn type="submit" form="form-login">
+          <ng-icon name="lucideLogIn" />
+          Log In
+        </button>
+      </hlm-field>
+    </hlm-card-footer>
+  </hlm-card>
+</div>

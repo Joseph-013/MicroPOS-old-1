@@ -1,0 +1,178 @@
+<div class="divide-border bg-background flex h-full w-full divide-x">
+  <div class="relative flex h-full flex-1 flex-col justify-between pr-2">
+    <app-cart-table [(scanServiceFocus)]="scanServiceFocus" />
+  </div>
+  <aside class="bg-background flex h-full w-1/3 max-w-120 flex-1 flex-col gap-3 px-4 py-4">
+    <div
+      class="outline-accent/50 flex min-h-6 items-center justify-center gap-1 rounded px-2 font-bold outline"
+      [class]="banner.activeBanner()?.style"
+    >
+      @if (banner.activeBanner(); as bannerMessage) {
+        {{ bannerMessage.message }}
+      }
+    </div>
+    <div class="flex min-h-0 flex-1 shrink-0 flex-col gap-4 overflow-y-auto">
+      <hlm-field>
+        <label hlmFieldLabel>Controls</label>
+        <div class="flex flex-wrap gap-2">
+          <div class="w-full">
+            <hlm-autocomplete
+              [(search)]="autocompleteSearchString"
+              [(value)]="autocompleteSelectedId"
+              [itemToString]="itemIdToName"
+              class="px-1"
+            >
+              <hlm-autocomplete-input placeholder="Manual Insert (Barcode, PLU, SKU, or Name)" />
+              <hlm-autocomplete-content *hlmAutocompletePortal>
+                <hlm-autocomplete-empty>No items found.</hlm-autocomplete-empty>
+                <div hlmAutocompleteList>
+                  @for (option of autocompleteOptions(); track option.id) {
+                    <hlm-autocomplete-item [value]="option.id" class="flex gap-2">
+                      <div class="flex min-w-30 flex-col text-xs">
+                        <span class="text-muted-foreground">{{ option.barcode || '-' }}</span>
+                        <span class="text-muted-foreground">{{ option.sku || '-' }}</span>
+                      </div>
+                      <span>{{ option.name }}</span>
+                    </hlm-autocomplete-item>
+                  }
+                </div>
+              </hlm-autocomplete-content>
+            </hlm-autocomplete>
+          </div>
+          <hlm-alert-dialog>
+            <button
+              hlmAlertDialogTrigger
+              hlmBtn
+              variant="secondary"
+              [disabled]="cartService.checkedItemIds().length === 0"
+              size="sm"
+            >
+              Clear Selected
+            </button>
+            <hlm-alert-dialog-content *hlmAlertDialogPortal="let ctx">
+              <hlm-alert-dialog-header>
+                <h2 hlmAlertDialogTitle>Clear selected items?</h2>
+                <p hlmAlertDialogDescription>
+                  All <strong>selected</strong> items in the current list will be removed.
+                </p>
+              </hlm-alert-dialog-header>
+              <hlm-alert-dialog-footer>
+                <button hlmAlertDialogCancel (click)="ctx.close()" variant="secondary">
+                  Cancel
+                </button>
+                <button
+                  hlmAlertDialogAction
+                  (click)="cartService.removeSelectedItems(); ctx.close()"
+                  variant="destructive"
+                >
+                  Clear
+                </button>
+              </hlm-alert-dialog-footer>
+            </hlm-alert-dialog-content>
+          </hlm-alert-dialog>
+          <hlm-alert-dialog>
+            <button
+              hlmAlertDialogTrigger
+              hlmBtn
+              variant="secondary"
+              [disabled]="cartService.itemOrder().length === 0"
+              size="sm"
+            >
+              Clear All
+            </button>
+            <hlm-alert-dialog-content *hlmAlertDialogPortal="let ctx">
+              <hlm-alert-dialog-header>
+                <h2 hlmAlertDialogTitle>Clear all items?</h2>
+                <p hlmAlertDialogDescription>
+                  <strong>All items</strong> in the current list will be removed. This cannot be
+                  undone.
+                </p>
+              </hlm-alert-dialog-header>
+              <hlm-alert-dialog-footer>
+                <button hlmAlertDialogCancel (click)="ctx.close()" variant="secondary">
+                  Cancel
+                </button>
+                <button
+                  hlmAlertDialogAction
+                  (click)="cartService.removeAllItems(); ctx.close()"
+                  variant="destructive"
+                >
+                  Clear
+                </button>
+              </hlm-alert-dialog-footer>
+            </hlm-alert-dialog-content>
+          </hlm-alert-dialog>
+          <button hlmToggle [(state)]="autoSave" size="sm">
+            @if (autoSave() === 'on') {
+              <ng-icon hlm size="sm" name="lucideSave" class="text-emerald-500" />
+            } @else if (autoSave() === 'off') {
+              <ng-icon hlm size="sm" name="lucideSaveOff" />
+            }
+            Autosave
+          </button>
+          <button hlmBtn size="sm" variant="secondary" (click)="refreshCart()">
+            <ng-icon hlm size="sm" name="lucideRefreshCw" />
+            Refresh
+          </button>
+        </div>
+      </hlm-field>
+      <hlm-field>
+        <div class="flex w-full items-center justify-between">
+          <label hlmFieldLabel>Quantity</label>
+          <div class="text-muted-foreground flex items-center gap-3 text-sm">
+            <button
+              hlmToggle
+              size="sm"
+              variant="outline"
+              [state]="resetItemQuantityOnNextScan() ? 'on' : 'off'"
+              (stateChange)="resetItemQuantityOnNextScan.set($event === 'on' ? true : false)"
+            >
+              @if (resetItemQuantityOnNextScan()) {
+                <ng-icon name="lucideRefreshCw" />
+              } @else {
+                <ng-icon name="lucideRefreshCwOff" />
+              }
+              Reset next scan
+            </button>
+          </div>
+        </div>
+
+        <lib-quantity-stepper
+          [value]="itemQuantity()"
+          [min]="1"
+          (valueChange)="itemQuantity.set($event)"
+        />
+      </hlm-field>
+      <!-- rest of controls -->
+    </div>
+    <div class="mt-auto flex items-end justify-end">
+      <button
+        hlmBtn
+        variant="secondary"
+        [disabled]="cartService.itemOrder().length === 0"
+        (click)="handleProceedToPayment()"
+      >
+        <ng-icon name="lucideCreditCard" />
+        Proceed to Payment
+      </button>
+    </div>
+  </aside>
+</div>
+
+<hlm-alert-dialog
+  [state]="itemsToAddToCartDialogState()"
+  (closed)="itemsToAddToCartDialogState.set('closed')"
+>
+  <hlm-alert-dialog-content *hlmAlertDialogPortal="let ctx">
+    <hlm-alert-dialog-header>
+      <h2 hlmAlertDialogTitle>Load Sales Order Items?</h2>
+      <p hlmAlertDialogDescription>This will overwrite current cart items and cart draft.</p>
+    </hlm-alert-dialog-header>
+    <hlm-alert-dialog-footer>
+      <button hlmAlertDialogCancel variant="secondary">Cancel</button>
+      <button hlmAlertDialogAction (click)="handleLoadItemsToAddToCart(); ctx.close()">
+        Proceed
+      </button>
+    </hlm-alert-dialog-footer>
+  </hlm-alert-dialog-content>
+</hlm-alert-dialog>

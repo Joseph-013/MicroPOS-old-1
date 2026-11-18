@@ -1,0 +1,28 @@
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = false
+	logallrefupdates = true
+[remote "origin"]
+	url = ssh://git@codeberg.org/cuppajoe/MicroPOS.git
+	fetch = +refs/heads/*:refs/remotes/origin/*
+[branch "main"]
+	remote = origin
+	merge = refs/heads/main
+	vscode-merge-base = origin/main
+[branch "repository-pattern"]
+	vscode-merge-base = origin/main
+	remote = origin
+	merge = refs/heads/repository-pattern
+[branch "repository-pattern-drizzle"]
+	vscode-merge-base = origin/repository-pattern
+	remote = origin
+	merge = refs/heads/repository-pattern-drizzle
+[branch "agents/dependency-resolution-errors"]
+	vscode-merge-base = origin/main
+[branch "agents/dependency-resolution-errors-ab2e4c6c"]
+	vscode-merge-base = origin/main
+[branch "receipt-printer-logic-to-angular"]
+	vscode-merge-base = origin/main
+	remote = origin
+	merge = refs/heads/receipt-printer-logic-to-angular

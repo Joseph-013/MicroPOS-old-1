@@ -1,0 +1,129 @@
+<form [formRoot]="form" class="flex size-full gap-3" (keydown.enter)="$event.preventDefault()">
+  <div class="m-1 flex-1 overflow-x-auto overflow-y-auto pr-2">
+    <table hlmTable>
+      <thead hlmTHead class="bg-background sticky top-0">
+        <tr hlmTr>
+          <th hlmTh class="w-10">Qty</th>
+          <th hlmTh>Item & Price</th>
+          <th hlmTh>Line Total</th>
+        </tr>
+      </thead>
+      <tbody hlmTBody>
+        @for (itemId of itemOrder(); track itemId) {
+          @let item = itemDetails()[itemId];
+          <tr hlmTr>
+            <td hlmTd class="text-center">{{ item.quantity }}x</td>
+            <td hlmTd>
+              <div class="flex gap-4">
+                {{ item.name }}
+                <span class="text-muted-foreground">@{{ item.price | currency: 'PHP' }}</span>
+              </div>
+            </td>
+            <td hlmTd>
+              {{ item.price * item.quantity | currency: 'PHP' }}
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <hlm-separator orientation="vertical" />
+  <div class="flex w-1/3 max-w-120 shrink-0 flex-col gap-4 overflow-x-hidden overflow-y-auto p-1">
+    <div class="bg-background sticky top-0 flex items-center justify-between">
+      <h2 class="bg-background sticky top-0 text-xl font-semibold">Payment</h2>
+      <button hlmBtn variant="secondary" (click)="return()">
+        <ng-icon name="lucideArrowLeft" />Return
+      </button>
+    </div>
+    <hlm-field-group>
+      <hlm-field>
+        <hlm-field-label>Total</hlm-field-label>
+        <h3 class="text-2xl font-semibold">
+          {{ grandTotal() | currency: 'PHP' }}
+        </h3>
+      </hlm-field>
+      <hlm-field>
+        <hlm-field-label>
+          <label>Amount Tendered</label>
+          <button hlmBtn variant="secondary" class="ml-auto" size="sm" (click)="handleCopyTotal()">
+            <ng-icon name="lucideCopy" />
+            Copy Total
+          </button>
+        </hlm-field-label>
+        <hlm-input-group>
+          <hlm-input-group-addon>
+            <ng-icon name="lucidePhilippinePeso" />
+          </hlm-input-group-addon>
+          <input hlmInputGroupInput type="number" [formField]="form.amountTendered" />
+          <hlm-input-group-addon align="inline-end">
+            <button
+              hlmInputGroupButton
+              variant="ghost"
+              size="icon-sm"
+              [disabled]="_model().amountTendered === 0"
+              (click)="clearAmountTendered()"
+            >
+              <ng-icon name="lucideCircleX" />
+            </button>
+          </hlm-input-group-addon>
+        </hlm-input-group>
+        @for (error of form.amountTendered().errors(); track error) {
+          <hlm-field-error [validator]="error.kind">
+            {{ error.message }}
+          </hlm-field-error>
+        }
+      </hlm-field>
+      <hlm-field>
+        <hlm-field-label>
+          <label>Change Amount</label>
+          <button
+            hlmBtn
+            variant="secondary"
+            class="ml-auto"
+            size="sm"
+            (click)="handleAutofillChangeAmount()"
+            [disabled]="disableChangeAmountAutofill()"
+          >
+            Autofill
+          </button>
+        </hlm-field-label>
+        <hlm-input-group>
+          <hlm-input-group-addon>
+            <ng-icon name="lucidePhilippinePeso" />
+          </hlm-input-group-addon>
+          <input hlmInputGroupInput type="number" [formField]="form.changeAmount" />
+          <hlm-input-group-addon align="inline-end">
+            <button
+              hlmInputGroupButton
+              variant="ghost"
+              size="icon-sm"
+              [disabled]="_model().changeAmount === 0"
+              (click)="clearChangeAmount()"
+            >
+              <ng-icon name="lucideCircleX" />
+            </button>
+          </hlm-input-group-addon>
+        </hlm-input-group>
+        @for (error of form.changeAmount().errors(); track error) {
+          <hlm-field-error [validator]="error.kind">
+            {{ error.message }}
+          </hlm-field-error>
+        }
+        @if (changeAmountMismatchWarning()) {
+          <p class="text-amber-500">Transaction balance mismatch.</p>
+        }
+      </hlm-field>
+    </hlm-field-group>
+    <div class="bg-background sticky bottom-0 mt-auto flex justify-between gap-2 pt-2">
+      <button hlmBtn class="flex-1" variant="secondary" (click)="handleComplete()">
+        <ng-icon name="lucideCheckCircle" />
+        Complete
+      </button>
+      <!-- <div class="flex-1"></div> -->
+      <button hlmBtn class="flex-1" (click)="handleComplete(true)">
+        <ng-icon name="lucidePrinterCheck" />
+        Complete and Print
+      </button>
+    </div>
+  </div>
+</form>

@@ -1,0 +1,218 @@
+<div #scrollContainer class="w-full overflow-y-auto pb-3">
+  <table hlmTable class="h-full">
+    <thead hlmTHead class="bg-background sticky top-0 z-10">
+      <tr hlmTr class="border-none">
+        <th hlmTh class="h-11 w-11">
+          <hlm-checkbox
+            class="m-auto size-5 cursor-pointer"
+            [checked]="cartService.allItemsChecked()"
+            (checkedChange)="cartService.toggleAllItemsCheck($event)"
+            [indeterminate]="cartService.someItemsChecked()"
+            [disabled]="!cartService.itemOrder().length"
+          />
+        </th>
+        <th hlmTh class="w-14 text-center">Qty</th>
+        <th hlmTh>
+          <div class="flex items-center gap-3">
+            <span>Item & Price</span>
+            <hlm-autocomplete
+              [(search)]="cartAutocompleteSearchString"
+              [(value)]="cartAutocompleteSelectedId"
+              [itemToString]="itemIdToName"
+              class="flex-1 opacity-30 transition-opacity has-focus:opacity-100"
+            >
+              <hlm-autocomplete-input
+                #cartAutocomplete
+                placeholder="Find Item (Barcode, PLU, SKU, or Name)"
+                (onFocus)="handleCartAutocompleteFocus()"
+                (onBlur)="handleCartAutocompleteBlur()"
+              />
+              <hlm-autocomplete-content *hlmAutocompletePortal>
+                <hlm-autocomplete-empty>No items found.</hlm-autocomplete-empty>
+                <div hlmAutocompleteList>
+                  @for (option of cartAutocompleteOptions(); track option.id) {
+                    <hlm-autocomplete-item [value]="option.id" class="flex gap-2">
+                      <div class="flex min-w-30 flex-col text-xs">
+                        <span class="text-muted-foreground">{{ option.barcode || '-' }}</span>
+                        <span class="text-muted-foreground">{{ option.sku || '-' }}</span>
+                      </div>
+                      <span>{{ option.name }}</span>
+                    </hlm-autocomplete-item>
+                  }
+                </div>
+              </hlm-autocomplete-content>
+            </hlm-autocomplete>
+          </div>
+        </th>
+        <th hlmTh class="w-22 text-end">Line Total</th>
+      </tr>
+      <tr hlmTr class="border-none">
+        <td colspan="4">
+          <div class="border-accent border-b"></div>
+        </td>
+      </tr>
+    </thead>
+    <tbody hlmTBody>
+      @for (itemId of cartService.itemOrder(); track itemId) {
+        @let item = cartService.itemDetails()![itemId];
+        <tr
+          hlmTr
+          [attr.data-item-id]="item.id"
+          class="h-10 cursor-pointer border-none focus:bg-red-500!"
+          [class.animate-scan-pulse-2s]="itemId === highlightItemId()"
+          [class.active]="item.checked"
+          (click)="openEditItemDialog(item)"
+          (contextmenu)="selectedItem.set(item)"
+          [hlmContextMenuTrigger]="menu"
+        >
+          <td hlmTd>
+            <hlm-checkbox
+              class="m-auto size-5 cursor-pointer"
+              [class.active]="item.checked || item.id === selectedItem()?.id"
+              [checked]="item.checked"
+              (checkedChange)="cartService.toggleItemCheck(item.id, $event)"
+              (click)="$event.stopPropagation()"
+            />
+          </td>
+          <td hlmTd class="text-center text-sky-600 dark:text-sky-400">
+            {{ item.quantity }}
+            <span class="text-xs">{{ item.plu ? PriceModeUnitMap[item.priceMode] : null }}</span>
+          </td>
+          <td hlmTd>
+            <div class="flex w-full items-center gap-3">
+              <span class="font-semibold">
+                {{ item.name }}
+              </span>
+              <span class="text-muted-foreground"> @{{ item.price | currency: 'PHP' }} </span>
+              <div class="border-muted-foreground/50 min-w-4 flex-1 border-b border-dashed"></div>
+            </div>
+          </td>
+          <td hlmTd class="text-end">
+            {{ item.quantity * item.price | currency: 'PHP' }}
+          </td>
+        </tr>
+      } @empty {
+        <tr hlmTr>
+          <td hlmTd colspan="4" class="text-muted-foreground py-12 text-center text-sm">
+            <div class="flex items-center justify-center gap-2">
+              <ng-icon hlm name="lucideShoppingCart" /> Cart empty. Waiting for input...
+            </div>
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>
+@if (cartService.itemOrder().length > 0) {
+  <div
+    class="border-border bg-background mx-2 mt-auto flex h-10 shrink-0 items-end justify-end gap-3 border-t font-mono text-2xl font-black"
+  >
+    <span class="text-muted-foreground">Total:</span>
+    {{ cartService.subTotal() | currency: 'PHP' }}
+  </div>
+}
+
+<ng-template #menu>
+  <hlm-dropdown-menu class="p-2">
+    <hlm-dropdown-menu-group>
+      <button hlmDropdownMenuItem variant="destructive" (click)="deleteItemDialog.set('open')">
+        <ng-icon name="lucideX" />
+        Remove
+      </button>
+    </hlm-dropdown-menu-group>
+  </hlm-dropdown-menu>
+</ng-template>
+
+<hlm-dialog [state]="editItemDialog()" (closed)="editItemDialog.set('closed')">
+  <hlm-dialog-content *hlmDialogPortal="let ctx">
+    @if (selectedItem(); as item) {
+      <hlm-dialog-header>
+        <h3 hlmDialogTitle>{{ item.name }}</h3>
+      </hlm-dialog-header>
+
+      <hlm-field>
+        <label hlmFieldLabel>Info</label>
+        <table hlmTable class="**:select-text">
+          <tr hlmTr class="border-none">
+            <td hlmTd class="text-muted-foreground">Barcode</td>
+            <td hlmTd>{{ item.barcode ?? '-' }}</td>
+          </tr>
+          <tr hlmTr class="border-none">
+            <td hlmTd class="text-muted-foreground">SKU</td>
+            <td hlmTd>{{ item.sku ?? '-' }}</td>
+          </tr>
+          <tr hlmTr class="border-none">
+            <td hlmTd class="text-muted-foreground">Name</td>
+            <td hlmTd>{{ item.name }}</td>
+          </tr>
+          <tr hlmTr class="border-none">
+            <td hlmTd class="text-muted-foreground">Price</td>
+            <td hlmTd>{{ item.price | currency: 'PHP' }}</td>
+          </tr>
+          <tr hlmTr class="border-none">
+            <td hlmTd class="text-muted-foreground">Created At</td>
+            <td hlmTd>{{ item.createdAt | date: 'MMMM d, y' }}</td>
+          </tr>
+        </table>
+      </hlm-field>
+
+      <hlm-field>
+        <label hlmFieldLabel>Adjust Quantity</label>
+        <lib-quantity-stepper
+          [steps]="[-10, -5, -2, -1, 1, 2, 5, 10]"
+          [value]="pendingNewQuantity() ?? 1"
+          [min]="1"
+          (valueChange)="pendingNewQuantity.set($event)"
+        />
+      </hlm-field>
+
+      <hlm-dialog-footer>
+        <button
+          hlmBtn
+          variant="destructive"
+          class="mr-auto"
+          (click)="deleteItemDialog.set('open'); ctx.close()"
+        >
+          Remove Item
+        </button>
+        <button hlmBtn variant="outline" (click)="selectedItem.set(null); ctx.close()">
+          Cancel
+        </button>
+        <button
+          hlmBtn
+          (click)="
+            applyEditItem(selectedItem()!.id, { quantity: pendingNewQuantity() });
+            selectedItem.set(null);
+            ctx.close()
+          "
+        >
+          Apply
+        </button>
+      </hlm-dialog-footer>
+    }
+  </hlm-dialog-content>
+</hlm-dialog>
+
+<hlm-dialog [state]="deleteItemDialog()" (closed)="deleteItemDialog.set('closed')">
+  <hlm-dialog-content *hlmDialogPortal="let ctx">
+    @if (selectedItem(); as item) {
+      <hlm-dialog-header>
+        <h3 hlmDialogTitle>Remove {{ item.name }}?</h3>
+        <p hlmDialogDescription>This action cannot be undone.</p>
+      </hlm-dialog-header>
+
+      <hlm-dialog-footer>
+        <button hlmBtn variant="outline" (click)="ctx.close(); selectedItem.set(null)">
+          Cancel
+        </button>
+        <button
+          hlmBtn
+          (click)="cartService.removeItem(selectedItem()!.id); selectedItem.set(null); ctx.close()"
+          variant="destructive"
+        >
+          Delete
+        </button>
+      </hlm-dialog-footer>
+    }
+  </hlm-dialog-content>
+</hlm-dialog>
